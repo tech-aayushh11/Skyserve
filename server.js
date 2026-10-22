@@ -1148,9 +1148,32 @@ function initializeServer() {
 }
 
 // Export handler for Vercel / serverless runtime
-const handler = async (req, res) => {
-  await initializeServer();
-  return handleRequest(req, res);
+const handler = (req, res) => {
+  return new Promise((resolve) => {
+    let resolved = false;
+    const done = () => {
+      if (!resolved) {
+        resolved = true;
+        resolve();
+      }
+    };
+    res.once('finish', done);
+    res.once('close', done);
+
+    (async () => {
+      try {
+        await initializeServer();
+        await handleRequest(req, res);
+      } catch (err) {
+        console.error('[SKYSERVE] Unhandled handler error:', err);
+        if (!res.headersSent) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Internal Server Error' }));
+        }
+        done();
+      }
+    })();
+  });
 };
 
 module.exports = handler;
