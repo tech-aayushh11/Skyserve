@@ -765,9 +765,10 @@ async function handleRequest(req, res) {
   const startTime = process.hrtime.bigint();
   const ip        = getClientIp(req);
   const session   = getSession(req);
-  const incomingUrl = (req.url && req.url.startsWith('/api/') && req.url !== '/api/index.js')
-    ? req.url
-    : (req.headers['x-matched-path'] || req.url || '/');
+  const matchedPath = req.headers['x-matched-path'];
+  const incomingUrl = (matchedPath && (matchedPath.startsWith('/api/') || matchedPath === '/healthz'))
+    ? matchedPath
+    : (req.url || '/');
   const urlObj    = new URL(incomingUrl, 'http://localhost');
   const pathname  = urlObj.pathname;
   const method    = req.method.toUpperCase();
