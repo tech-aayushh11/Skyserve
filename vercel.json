@@ -8,20 +8,10 @@
   ],
   "functions": {
     "server.js": {
-      "includeFiles": [
-        "*.html",
-        "css/**",
-        "js/**",
-        "assets/**"
-      ]
+      "includeFiles": "{*.html,css/**,js/**,assets/**}"
     },
     "api/**/*.js": {
-      "includeFiles": [
-        "*.html",
-        "css/**",
-        "js/**",
-        "assets/**"
-      ]
+      "includeFiles": "{*.html,css/**,js/**,assets/**}"
     }
   }
 }
