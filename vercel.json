@@ -2,12 +2,16 @@
   "version": 2,
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api/[...path].js"
+      "source": "/login",
+      "destination": "/login.html"
+    },
+    {
+      "source": "/api/:match*",
+      "destination": "/api/index.js?__path=/api/:match*"
     },
     {
       "source": "/healthz",
-      "destination": "/api/[...path].js"
+      "destination": "/api/index.js?__path=/healthz"
     }
   ]
 }

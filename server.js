@@ -772,9 +772,8 @@ async function handleRequest(req, res) {
   const startTime = process.hrtime.bigint();
   const ip        = getClientIp(req);
   const session   = getSession(req);
-  const incomingUrl = req.headers['x-matched-path'] || req.url || '/';
-  const urlObj    = new URL(incomingUrl, 'http://localhost');
-  const pathname  = urlObj.pathname;
+  const urlObj    = new URL(req.url, 'http://localhost');
+  const pathname  = urlObj.searchParams.get('__path') || req.headers['x-matched-path'] || urlObj.pathname;
   const method    = req.method.toUpperCase();
 
   // Diagnostics / Health check (top-level, unauthenticated)
