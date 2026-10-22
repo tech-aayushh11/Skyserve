@@ -765,28 +765,21 @@ async function handleRequest(req, res) {
   const startTime = process.hrtime.bigint();
   const ip        = getClientIp(req);
   const session   = getSession(req);
-  const matchedPath = req.headers['x-matched-path'];
-  const incomingUrl = (matchedPath && (matchedPath.startsWith('/api/') || matchedPath === '/healthz'))
-    ? matchedPath
-    : (req.url || '/');
+  const incomingUrl = req.headers['x-matched-path'] || req.url || '/';
   const urlObj    = new URL(incomingUrl, 'http://localhost');
   const pathname  = urlObj.pathname;
   const method    = req.method.toUpperCase();
 
-  // Audit-safe request logging — no bodies, passwords, or cookies
-  res.on('finish', () => {
-    const ms = (Number(process.hrtime.bigint() - startTime) / 1e6).toFixed(2);
-    console.log(`[HTTP] ${method} ${pathname} ${res.statusCode} ${ms}ms`);
-  });
-
-  // Health check (unauthenticated, no-store)
-  if (method === 'GET' && (pathname === '/healthz' || pathname === '/api/healthz')) {
+  // Diagnostics / Health check (top-level, unauthenticated)
+  if (req.url.includes('healthz') || (req.headers['x-matched-path'] || '').includes('healthz')) {
     let dirFiles = [];
     let cwdFiles = [];
     try { dirFiles = fs.readdirSync(__dirname); } catch (e) { dirFiles = [e.message]; }
     try { cwdFiles = fs.readdirSync(process.cwd()); } catch (e) { cwdFiles = [e.message]; }
     return sendJson(req, res, 200, {
       status: 'ok',
+      reqUrl: req.url,
+      matchedPath: req.headers['x-matched-path'],
       dirname: __dirname,
       cwd: process.cwd(),
       dirFiles,
