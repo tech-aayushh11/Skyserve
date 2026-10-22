@@ -1,0 +1,1861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SKYSERVE | AI Readiness Rocket Launch Checker</title>
+  <meta name="description" content="Aerospace mission-control decision support platform for high-power rocketry and launch vehicle readiness validation.">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2300e5ff'><polygon points='12 2 19 21 12 17 5 21 12 2'/></svg>">
+  <style id="auth-shield">
+    #app-root { opacity: 0; pointer-events: none; }
+  </style>
+</head>
+<body>
+
+  <!-- Security Session Splash Gate -->
+  <div id="mc-auth-splash" style="position: fixed; inset: 0; z-index: 9999; background: #050811; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;">
+    <div class="brand-logo-hex" style="width: 52px; height: 52px; box-shadow: 0 0 24px var(--cyan-primary);">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="width: 26px; height: 26px; color: var(--cyan-primary);">
+        <polygon points="12 2 19 21 12 17 5 21 12 2"></polygon>
+      </svg>
+    </div>
+    <div style="font-family: var(--font-heading); font-size: 13px; letter-spacing: 2px; color: #fff;">
+      SKYSERVE MISSION CONTROL
+    </div>
+    <div style="font-family: var(--font-mono); font-size: 11px; color: var(--cyan-primary); display: flex; align-items: center; gap: 8px;">
+      <span class="btn-spinner" style="border-top-color: var(--cyan-primary);"></span>
+      VERIFYING SECURITY PERIMETER & SESSION...
+    </div>
+  </div>
+
+  <!-- Cinematic Background Layer Stack -->
+  <div class="cinematic-bg-container">
+    <div class="cinematic-bg-image"></div>
+    <div class="cinematic-bg-overlay"></div>
+    <div class="space-grid-pattern"></div>
+  </div>
+
+  <!-- Main Mission Control Shell -->
+  <div id="app-root">
+
+    <!-- Top Mission Control Header -->
+    <header class="mc-header">
+      <!-- Left Branding -->
+      <div class="mc-brand-group">
+        <a class="brand-badge" onclick="window.SkyserveApp.switchView('dashboard')">
+          <div class="brand-logo-hex">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 19 21 12 17 5 21 12 2"></polygon>
+            </svg>
+          </div>
+          <div class="brand-titles">
+            <div class="brand-name">
+              <span>SKYSERVE</span>
+              <span class="interlock-dot" title="Mission Telemetry Connected"></span>
+            </div>
+            <div class="brand-sub">AI Readiness Checker</div>
+          </div>
+        </a>
+        <div class="tagline-pill">Analyze. Validate. Launch Safer.</div>
+      </div>
+
+      <!-- Center Mission Selector & Real-Time Mission Clocks -->
+      <div class="mc-header-center">
+        <div class="mission-selector-box">
+          <span style="color: var(--text-muted); font-size: 10px;">MISSION:</span>
+          <select id="header-mission-select">
+            <option value="JERICHO-1" selected>JERICHO-1 (Orbital Test)</option>
+            <option value="ASTRAEUS-IV">ASTRAEUS-IV (Stratosphere)</option>
+            <option value="HYPERION-X">HYPERION-X (Micro-Payload)</option>
+          </select>
+        </div>
+
+        <div class="mission-clock-widget">
+          <div class="clock-item">
+            <span class="clock-label">UTC TIME</span>
+            <span id="header-utc-clock" class="clock-val">00:00:00 UTC</span>
+          </div>
+          <div style="width: 1px; height: 20px; background: rgba(255,255,255,0.1);"></div>
+          <div class="clock-item">
+            <span class="clock-label">COUNTDOWN CLOCK</span>
+            <span id="header-tminus-clock" class="clock-val countdown-hold">T-00:42:15 [HOLD]</span>
+          </div>
+        </div>
+
+        <!-- Live Telemetry Simulation Speed Controls -->
+        <div class="sim-playback-group" title="Simulation Telemetry Clock Rate">
+          <button id="btn-sim-pause" class="sim-btn" title="Pause / Resume Live Simulation">⏸</button>
+          <button id="btn-sim-1x" class="sim-btn active" title="1x Real-time">1x</button>
+          <button id="btn-sim-2x" class="sim-btn" title="2x Fast Forward">2x</button>
+          <button id="btn-sim-5x" class="sim-btn" title="5x Warp">5x</button>
+        </div>
+      </div>
+
+      <!-- Right Mission Controls -->
+      <div class="mc-header-right">
+        <!-- Search Trigger -->
+        <button id="btn-search-trigger" class="header-btn search-trigger" title="Quick Mission Search (Ctrl+K)">
+          <span style="display:flex; align-items:center; gap:6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            Search...
+          </span>
+          <span class="kbd-badge">Ctrl K</span>
+        </button>
+
+        <!-- Audio Synthesizer Toggle -->
+        <button id="btn-audio-toggle" class="header-btn audio-btn active" title="Toggle Mission Audio Chimes">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+          <span class="audio-status-label">AUDIO ON</span>
+        </button>
+
+        <!-- Notification Bell -->
+        <div class="notif-badge-wrap">
+          <button id="btn-notifications" class="header-btn" title="Pending System Alerts">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+          </button>
+          <span class="notif-count">2</span>
+        </div>
+
+        <!-- User Role Profile Pill & Dropdown -->
+        <div class="user-profile-menu-container" style="position: relative;">
+          <div id="role-profile-pill" class="role-pill-select" title="Mission Personnel Profile">
+            <div id="header-user-avatar" class="role-avatar">--</div>
+            <div class="role-info">
+              <span id="header-user-name" class="role-name">Authenticating...</span>
+              <span id="header-user-role" class="role-title">SECURE</span>
+            </div>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left: 2px; opacity: 0.7;"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </div>
+
+          <!-- Profile Dropdown Menu -->
+          <div id="user-profile-dropdown" class="user-dropdown-menu" style="display: none;">
+            <div class="user-dropdown-header">
+              <div id="dropdown-user-fullname" class="dropdown-name">User Name</div>
+              <div id="dropdown-user-handle" class="dropdown-handle">@username</div>
+              <span id="dropdown-user-role-badge" class="badge-role-admin" style="margin-top: 6px; display: inline-block;">ADMIN</span>
+            </div>
+            <div class="dropdown-divider"></div>
+            <ul class="dropdown-action-list">
+              <li id="dropdown-item-admin" style="display: none;">
+                <button class="dropdown-item-btn" id="dropdown-btn-admin">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                  <span>Admin Panel</span>
+                </button>
+              </li>
+              <li>
+                <button class="dropdown-item-btn" id="btn-open-change-pwd">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                  <span>Change Password</span>
+                </button>
+              </li>
+              <li>
+                <button class="dropdown-item-btn logout-danger" id="btn-header-logout">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                  <span>Sign Out</span>
+                </button>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Workspace: Sidebar Navigation + Dynamic Viewport -->
+    <div class="mc-body">
+      
+      <!-- Left Aerospace Sidebar -->
+      <nav class="mc-sidebar" aria-label="Mission Navigation">
+        <div>
+          <div class="sidebar-section-title">Core Operations</div>
+          <ul class="sidebar-nav-list">
+            <li>
+              <a class="nav-link active" data-view="dashboard">
+                <div class="nav-link-left">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+                  <span>Dashboard</span>
+                </div>
+                <span id="sidebar-decision-badge" class="nav-badge badge-hold">HOLD</span>
+              </a>
+            </li>
+            <li>
+              <a class="nav-link" data-view="checklist">
+                <div class="nav-link-left">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                  <span>Launch Checklist</span>
+                </div>
+                <span id="sidebar-chk-badge" class="nav-badge badge-hold">18/22</span>
+              </a>
+            </li>
+            <li>
+              <a class="nav-link" data-view="weather">
+                <div class="nav-link-left">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"></path></svg>
+                  <span>Weather Monitoring</span>
+                </div>
+                <span class="nav-badge badge-ready">PASS</span>
+              </a>
+            </li>
+            <li>
+              <a class="nav-link" data-view="rocket">
+                <div class="nav-link-left">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"></path><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"></path></svg>
+                  <span>Rocket Systems</span>
+                </div>
+                <span class="nav-badge badge-ready">READY</span>
+              </a>
+            </li>
+            <li>
+              <a class="nav-link" data-view="avionics">
+                <div class="nav-link-left">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="15" x2="23" y2="15"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="15" x2="4" y2="15"></line></svg>
+                  <span>Avionics Health</span>
+                </div>
+                <span class="nav-badge badge-hold">WARN</span>
+              </a>
+            </li>
+            <li>
+              <a class="nav-link" data-view="telemetry">
+                <div class="nav-link-left">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 20h.01"></path><path d="M7 20v-4"></path><path d="M12 20v-8"></path><path d="M17 20V8"></path><path d="M22 4v16"></path></svg>
+                  <span>Telemetry Link</span>
+                </div>
+                <span class="nav-badge badge-hold">WARN</span>
+              </a>
+            </li>
+          </ul>
+
+          <div class="sidebar-section-title">Analysis & Intelligence</div>
+          <ul class="sidebar-nav-list">
+            <li>
+              <a class="nav-link" data-view="ai">
+                <div class="nav-link-left">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M3 12h3m12 0h3M12 3v3m0 12v3"></path><path d="m5.6 5.6 2.1 2.1m8.6 8.6 2.1 2.1m0-12.8-2.1 2.1m-8.6 8.6-2.1 2.1"></path></svg>
+                  <span>AI Analysis</span>
+                </div>
+                <span class="nav-badge" style="background: rgba(168,85,247,0.2); color: #c084fc; border: 1px solid rgba(168,85,247,0.4);">V4.2</span>
+              </a>
+            </li>
+            <li>
+              <a class="nav-link" data-view="readiness">
+                <div class="nav-link-left">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+                  <span>Readiness Result</span>
+                </div>
+                <span class="nav-badge badge-hold">82%</span>
+              </a>
+            </li>
+            <li>
+              <a class="nav-link" data-view="reports">
+                <div class="nav-link-left">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                  <span>Mission Reports</span>
+                </div>
+              </a>
+            </li>
+            <li>
+              <a class="nav-link" data-view="logs">
+                <div class="nav-link-left">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                  <span>Data & Logs</span>
+                </div>
+              </a>
+            </li>
+            <li>
+              <a class="nav-link" data-view="auth">
+                <div class="nav-link-left">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                  <span>Team & Roles</span>
+                </div>
+              </a>
+            </li>
+            <li id="sidebar-item-admin" style="display: none;">
+              <a class="nav-link" data-view="admin">
+                <div class="nav-link-left">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                  <span>Admin Panel</span>
+                </div>
+                <span class="badge-pill-cyan">SYS</span>
+              </a>
+            </li>
+            <li>
+              <a class="nav-link" data-view="settings">
+                <div class="nav-link-left">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                  <span>Launch Criteria</span>
+                </div>
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Sidebar Safety Interlock Footer -->
+        <div class="sidebar-footer">
+          <div class="safety-interlock-card">
+            <div class="interlock-header">
+              <span class="interlock-title">
+                <span class="interlock-dot"></span>
+                SAFETY INTERLOCK
+              </span>
+              <span style="font-family: var(--font-mono); font-size: 9px; color: var(--green-ready);">ACTIVE</span>
+            </div>
+            <div class="interlock-desc">
+              Human-in-the-loop decision-support. Autonomous launch ignition strictly disabled by software governance.
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <!-- Main Dynamic Viewport -->
+      <main class="mc-viewport">
+
+        <!-- ===================================================================
+             1. DASHBOARD VIEW
+             =================================================================== -->
+        <section id="view-dashboard" class="view-section active-view">
+          
+          <!-- Hero Section Header -->
+          <div class="view-hero">
+            <div class="hero-titles">
+              <div class="hero-badge-tag">
+                <span class="interlock-dot"></span>
+                AI POWERED LAUNCH READINESS CHECKER
+              </div>
+              <h1 class="hero-main-title">MISSION CONTROL DASHBOARD</h1>
+              <div class="hero-subtitle">Analyze. Validate. Launch Safer. Real-time telemetry synthesis & multi-layer flight gatekeeper.</div>
+            </div>
+            <div class="hero-actions">
+              <button class="btn btn-secondary" onclick="window.SkyserveApp.openReportModal()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                Export Report
+              </button>
+              <button class="btn btn-primary" onclick="window.SkyserveApp.triggerAiAnalysisSimulation()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                RUN FULL ANALYSIS
+              </button>
+            </div>
+          </div>
+
+          <!-- Interactive Failure Injection & Simulation Presets Bar -->
+          <div class="scenario-injector-bar">
+            <div class="scenario-bar-left">
+              <span class="scenario-bar-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                Failure Injection Scenarios:
+              </span>
+            </div>
+            <div class="scenario-pills-row">
+              <button class="scenario-btn scen-ready" data-scenario="nominal_go" title="Force all parameters nominal, complete checklist, verify green GO">
+                <span class="scenario-dot"></span> All Green (GO)
+              </button>
+              <button class="scenario-btn scen-crit" data-scenario="wind_shear_lightning" title="Inject 36 km/h gusts & storm cell within 14 km">
+                <span class="scenario-dot"></span> Wind Shear & Storm (NO-GO)
+              </button>
+              <button class="scenario-btn scen-crit" data-scenario="avionics_sag" title="Inject severe 4S bus collapse to 13.8V">
+                <span class="scenario-dot"></span> Bus Voltage Sag (NO-GO)
+              </button>
+              <button class="scenario-btn scen-warn" data-scenario="rf_blackout" title="Inject -96 dBm RSSI, 18 pkts/s, 14.8% loss">
+                <span class="scenario-dot"></span> Telemetry Dropout (HOLD)
+              </button>
+              <button class="scenario-btn scen-crit" data-scenario="chamber_overpressure" title="Inject 64.2 bar motor pressure spike">
+                <span class="scenario-dot"></span> Chamber Overpressure (NO-GO)
+              </button>
+              <button class="scenario-btn active" data-scenario="baseline_hold" title="Reset to standard countdown hold state">
+                <span class="scenario-dot"></span> Reset Baseline (HOLD)
+              </button>
+            </div>
+          </div>
+
+          <!-- Top Subsystem Health Cards Grid -->
+          <div class="status-cards-grid">
+            <!-- Weather Card -->
+            <div id="card-weather-status" class="glass-panel status-card" onclick="window.SkyserveApp.switchView('weather')">
+              <div class="status-card-header">
+                <span class="status-card-title">Weather Status</span>
+                <span class="status-indicator-pill status-pill-ready">FAVORABLE</span>
+              </div>
+              <div class="status-card-value">94%</div>
+              <div class="status-card-desc">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"></path></svg>
+                Wind: 14.8 km/h | 042° NE
+              </div>
+            </div>
+
+            <!-- Rocket Systems Card -->
+            <div id="card-rocket-status" class="glass-panel status-card" onclick="window.SkyserveApp.switchView('rocket')">
+              <div class="status-card-header">
+                <span class="status-card-title">Rocket Systems</span>
+                <span class="status-indicator-pill status-pill-ready">PASS</span>
+              </div>
+              <div class="status-card-value">91%</div>
+              <div class="status-card-desc">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                Stability: 2.14 Calibers
+              </div>
+            </div>
+
+            <!-- Avionics Card -->
+            <div id="card-avionics-status" class="glass-panel status-card" onclick="window.SkyserveApp.switchView('avionics')">
+              <div class="status-card-header">
+                <span class="status-card-title">Avionics Status</span>
+                <span class="status-indicator-pill status-pill-warning">VOLTAGE SAG</span>
+              </div>
+              <div class="status-card-value">76%</div>
+              <div class="status-card-desc" style="color: var(--amber-warning);">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                Cell #3: 3.61V (Pre-heat Draw)
+              </div>
+            </div>
+
+            <!-- Telemetry Card -->
+            <div id="card-telemetry-status" class="glass-panel status-card" onclick="window.SkyserveApp.switchView('telemetry')">
+              <div class="status-card-header">
+                <span class="status-card-title">Telemetry Status</span>
+                <span class="status-indicator-pill status-pill-warning">PACKET JITTER</span>
+              </div>
+              <div class="status-card-value">79%</div>
+              <div class="status-card-desc">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 20h.01"></path><path d="M7 20v-4"></path><path d="M12 20v-8"></path></svg>
+                RSSI: -68 dBm | UHF Delta 62ms
+              </div>
+            </div>
+
+            <!-- Checklist Card -->
+            <div id="card-checklist-status" class="glass-panel status-card" onclick="window.SkyserveApp.switchView('checklist')">
+              <div class="status-card-header">
+                <span class="status-card-title">Pre-Launch Checklist</span>
+                <span class="status-indicator-pill status-pill-warning">18 / 22 DONE</span>
+              </div>
+              <div class="status-card-value">81%</div>
+              <div class="status-card-desc">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"></path></svg>
+                2 Critical Sign-offs Pending
+              </div>
+            </div>
+          </div>
+
+          <!-- Hero Dual Column: Circular Readiness Gauge & Trend Chart -->
+          <div class="dashboard-main-grid">
+            
+            <!-- Left: Hero Circular Gauge -->
+            <div class="glass-panel readiness-hero-card">
+              <div style="font-family: var(--font-heading); font-size: 11px; letter-spacing: 2px; color: var(--cyan-primary); text-transform: uppercase;">
+                OVERALL FLIGHT READINESS
+              </div>
+
+              <!-- SVG Circular Dial Gauge -->
+              <div class="dial-container">
+                <svg class="dial-svg" viewBox="0 0 200 200">
+                  <circle class="dial-bg" cx="100" cy="100" r="85"></circle>
+                  <circle id="dash-dial-circle" class="dial-progress" cx="100" cy="100" r="85"></circle>
+                </svg>
+                <div class="dial-center-text">
+                  <span id="dash-readiness-score" class="dial-score-number">82%</span>
+                  <span class="dial-score-label">AGGREGATED</span>
+                </div>
+              </div>
+
+              <!-- Decision Pill -->
+              <div id="dash-decision-pill" class="mission-decision-pill decision-hold">
+                HOLD
+              </div>
+
+              <!-- Reasons Accordion/List -->
+              <div class="decision-reasons-list">
+                <div class="reasons-header">PRIMARY HOLD CONDITIONS:</div>
+                <div id="dash-decision-reasons">
+                  <div class="reason-item warning">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                    <span>Battery requires bench load verification</span>
+                  </div>
+                  <div class="reason-item warning">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                    <span>Telemetry packet latency jitter detected</span>
+                  </div>
+                  <div class="reason-item critical">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                    <span>Final team approval poll pending</span>
+                  </div>
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 10px; width: 100%; margin-top: 14px;">
+                <button class="btn btn-secondary btn-sm" style="flex:1;" onclick="window.SkyserveApp.switchView('readiness')">View Details</button>
+                <button class="btn btn-primary btn-sm" style="flex:1;" onclick="window.SkyserveApp.openReportModal()">Generate Report</button>
+              </div>
+            </div>
+
+            <!-- Right: Live Canvas Trend & AI Insights Card -->
+            <div class="dashboard-right-col">
+              
+              <!-- Readiness Trend Chart Card -->
+              <div class="glass-panel trend-card">
+                <div class="card-header-flex">
+                  <div class="panel-title-group">
+                    <div class="panel-icon-wrap">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                    </div>
+                    <div>
+                      <div class="panel-title">Readiness Score Trend (T-60 min)</div>
+                      <div class="panel-subtitle">Multi-variable aggregated sensor telemetry trendline</div>
+                    </div>
+                  </div>
+                  <span class="nav-badge badge-ready">LIVE 1.0 Hz</span>
+                </div>
+                <div class="chart-wrapper">
+                  <canvas id="canvas-dash-trend" class="telemetry-canvas"></canvas>
+                </div>
+              </div>
+
+              <!-- AI Risk Insights Card -->
+              <div class="glass-panel ai-insights-card">
+                <div class="card-header-flex">
+                  <div class="panel-title-group">
+                    <span class="ai-badge">AI INSIGHTS</span>
+                    <div>
+                      <div class="panel-title">Decision-Support Anomaly Engine</div>
+                      <div class="panel-subtitle">Pattern matching against historical test flights and physical constraints</div>
+                    </div>
+                  </div>
+                  <button class="btn btn-secondary btn-sm" onclick="window.SkyserveApp.switchView('ai')">Full AI Report →</button>
+                </div>
+
+                <div id="dash-ai-insights-list" class="insights-list">
+                  <!-- Populated dynamically via JS -->
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Real-Time Flight Dynamics & Telemetry HUD Grid -->
+          <div class="dashboard-split-grid" style="margin-bottom: 24px;">
+            <!-- Left: Trajectory & Projected Apogee Simulation Canvas -->
+            <div class="hud-canvas-card">
+              <div class="hud-canvas-header">
+                <div class="hud-canvas-title">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"></path><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"></path></svg>
+                  <span>Flight Trajectory & Projected Apogee Profile</span>
+                </div>
+                <div class="hud-canvas-meta">AZIMUTH 042° | TARGET 120 KM</div>
+              </div>
+              <div style="height: 180px; position: relative;">
+                <canvas id="canvas-trajectory" class="telemetry-chart-canvas"></canvas>
+                <div class="canvas-overlay-data">
+                  <div class="overlay-metric"><span>APOGEE:</span> <strong id="hud-traj-apogee">121.6 km</strong></div>
+                  <div class="overlay-metric"><span>MAX Q:</span> <strong>11.5 km</strong></div>
+                  <div class="overlay-metric"><span>STATUS:</span> <strong id="hud-traj-status" style="color: var(--cyan-primary);">STANDBY</strong></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Rocket Attitude & Gyro Horizon HUD -->
+            <div class="hud-canvas-card">
+              <div class="hud-canvas-header">
+                <div class="hud-canvas-title">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line></svg>
+                  <span>Vehicle Attitude & Gyro Horizon HUD</span>
+                </div>
+                <div class="hud-canvas-meta">DUAL IMU 9-DOF MEMS</div>
+              </div>
+              <div style="height: 180px; position: relative;">
+                <canvas id="canvas-attitude-horizon" class="telemetry-chart-canvas"></canvas>
+                <div class="canvas-overlay-data">
+                  <div class="overlay-metric"><span>PITCH:</span> <strong id="hud-att-pitch">89.4°</strong></div>
+                  <div class="overlay-metric"><span>ROLL:</span> <strong id="hud-att-roll">0.2°</strong></div>
+                  <div class="overlay-metric"><span>YAW:</span> <strong id="hud-att-yaw">42.0°</strong></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Split: Recent Activity & Quick Actions -->
+          <div class="dashboard-split-grid">
+            <!-- Activity Feed -->
+            <div class="glass-panel">
+              <div class="card-header-flex">
+                <div class="panel-title">Recent Operations Log</div>
+                <button class="btn btn-secondary btn-sm" onclick="window.SkyserveApp.switchView('logs')">View All Logs</button>
+              </div>
+              <div class="activity-feed-list">
+                <div class="activity-item">
+                  <div class="activity-left">
+                    <div class="activity-dot" style="background: var(--cyan-primary);"></div>
+                    <span>Primary S-Band high-gain tracking dish locked with Pad-03 gantry</span>
+                  </div>
+                  <span class="activity-time">T-00:46:12</span>
+                </div>
+                <div class="activity-item">
+                  <div class="activity-left">
+                    <div class="activity-dot" style="background: var(--amber-warning);"></div>
+                    <span>Cell #3 voltage dip (3.61V) flagged during avionics bus load test</span>
+                  </div>
+                  <span class="activity-time">T-00:44:05</span>
+                </div>
+                <div class="activity-item">
+                  <div class="activity-left">
+                    <div class="activity-dot" style="background: var(--green-ready);"></div>
+                    <span>Dual RTK high-precision GPS lock achieved (18 Satellites)</span>
+                  </div>
+                  <span class="activity-time">T-00:41:20</span>
+                </div>
+                <div class="activity-item">
+                  <div class="activity-left">
+                    <div class="activity-dot" style="background: var(--green-ready);"></div>
+                    <span>Flight termination transmitter continuity signal confirmed</span>
+                  </div>
+                  <span class="activity-time">T-00:38:10</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quick Actions Panel -->
+            <div class="glass-panel">
+              <div class="panel-title" style="margin-bottom: 4px;">Quick Mission Actions</div>
+              <div class="quick-actions-grid">
+                <div class="quick-action-btn" data-quick-action="checklist">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"></path></svg>
+                  <span>Update Checklist</span>
+                </div>
+                <div class="quick-action-btn" data-quick-action="ai">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle></svg>
+                  <span>Run AI Analysis</span>
+                </div>
+                <div class="quick-action-btn" data-quick-action="telemetry">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 20h.01"></path><path d="M7 20v-4"></path></svg>
+                  <span>View Telemetry</span>
+                </div>
+                <div class="quick-action-btn" data-quick-action="report">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path></svg>
+                  <span>Generate Report</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- ===================================================================
+             2. LAUNCH CHECKLIST VIEW
+             =================================================================== -->
+        <section id="view-checklist" class="view-section">
+          <div class="view-hero">
+            <div class="hero-titles">
+              <div class="hero-badge-tag">SAFETY GATEKEEPER</div>
+              <h1 class="hero-main-title">DIGITAL PRE-LAUNCH CHECKLIST</h1>
+              <div class="hero-subtitle">Interactive 22-item flight certification protocol. Unchecked critical items enforce immediate mission HOLD.</div>
+            </div>
+            <div class="hero-actions">
+              <button id="btn-add-checklist-item" class="btn btn-secondary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                Add Protocol Item
+              </button>
+            </div>
+          </div>
+
+          <!-- Progress Banner -->
+          <div class="glass-panel checklist-progress-bar-wrap">
+            <div class="checklist-stats-row">
+              <span style="font-family: var(--font-heading); font-size: 13px; color: #fff;">CHECKLIST COMPLETION STATUS</span>
+              <div>
+                <span id="chk-progress-count" style="font-family: var(--font-mono); color: var(--cyan-primary); font-weight: 700; margin-right: 12px;">18 / 22 completed</span>
+                <span id="chk-progress-percent" style="font-family: var(--font-heading); color: #fff; font-weight: 800;">81%</span>
+              </div>
+            </div>
+            <div class="progress-track">
+              <div id="chk-progress-fill" class="progress-fill" style="width: 81%;"></div>
+            </div>
+          </div>
+
+          <!-- Filters Bar -->
+          <div class="checklist-filter-bar">
+            <div id="checklist-filters" class="checklist-filter-tabs">
+              <button class="filter-tab-btn active" data-filter="all">All Items (22)</button>
+              <button class="filter-tab-btn" data-filter="critical">Critical Only</button>
+              <button class="filter-tab-btn" data-filter="pending">Pending Review (4)</button>
+              <button class="filter-tab-btn" data-filter="completed">Completed (18)</button>
+            </div>
+            <div style="font-size: 11px; color: var(--text-muted);">
+              Safety Interlock: <strong style="color: var(--amber-warning);">Active (Incomplete Criticals Block GO)</strong>
+            </div>
+          </div>
+
+          <!-- Checklist Table -->
+          <div class="checklist-table-container">
+            <table class="mc-table">
+              <thead>
+                <tr>
+                  <th style="width: 44px; text-align: center;">Sign</th>
+                  <th>ID</th>
+                  <th>Verification Title & Category</th>
+                  <th>Priority</th>
+                  <th>Status</th>
+                  <th>Responsible Lead</th>
+                  <th>Timestamp</th>
+                  <th>Technical Notes</th>
+                </tr>
+              </thead>
+              <tbody id="checklist-table-body">
+                <!-- Injected dynamically via JS -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ===================================================================
+             3. WEATHER VIEW
+             =================================================================== -->
+        <section id="view-weather" class="view-section">
+          <div class="view-hero">
+            <div class="hero-titles">
+              <div class="hero-badge-tag">ENVIRONMENTAL SENSING</div>
+              <h1 class="hero-main-title">ATMOSPHERIC & WEATHER MONITORING</h1>
+              <div class="hero-subtitle">Real-time Pad-03 meteorological array, surface anemometers, Doppler radar, and configurable launch criteria limits.</div>
+            </div>
+          </div>
+
+          <!-- Weather Hero Row -->
+          <div class="weather-hero-row">
+            <div class="glass-panel weather-status-card">
+              <div>
+                <div style="font-family: var(--font-heading); font-size: 11px; color: var(--text-muted); letter-spacing: 1.5px; text-transform: uppercase;">
+                  WEATHER READINESS STATUS
+                </div>
+                <div style="margin: 14px 0 10px;">
+                  <span id="w-overall-pill" class="status-indicator-pill status-pill-ready" style="font-size: 13px; padding: 6px 14px;">
+                    WEATHER GO (PASS)
+                  </span>
+                </div>
+                <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">
+                  Surface winds and wind shear profile are comfortably below abort threshold. No electrical cells within 48 km.
+                </div>
+              </div>
+
+              <!-- Configurable Criteria Sliders -->
+              <div style="border-top: 1px solid var(--border-subtle); padding-top: 14px;">
+                <div style="font-family: var(--font-heading); font-size: 10px; color: var(--cyan-primary); letter-spacing: 1px; margin-bottom: 8px;">
+                  CONFIGURABLE LAUNCH CRITERIA LIMITS
+                </div>
+                <div class="threshold-slider-group">
+                  <label>
+                    <span>Max Surface Wind Speed:</span>
+                    <strong id="val-wind-limit" style="font-family: var(--font-mono); color: var(--cyan-primary);">28.0 km/h</strong>
+                  </label>
+                  <input id="slider-wind-limit" type="range" class="threshold-range-input" min="10" max="45" value="28" step="1">
+                </div>
+                <div class="threshold-slider-group">
+                  <label>
+                    <span>Max Temperature:</span>
+                    <strong id="val-temp-limit" style="font-family: var(--font-mono); color: var(--cyan-primary);">38.0°C</strong>
+                  </label>
+                  <input id="slider-temp-limit" type="range" class="threshold-range-input" min="20" max="45" value="38" step="1">
+                </div>
+              </div>
+            </div>
+
+            <!-- Wind Vector Compass & Trend -->
+            <div class="glass-panel" style="display: flex; gap: 20px; align-items: center; justify-content: space-around;">
+              <div style="text-align: center;">
+                <div class="panel-title" style="margin-bottom: 8px;">WIND VECTOR COMPASS</div>
+                <canvas id="canvas-wind-compass" width="160" height="160" style="width: 160px; height: 160px;"></canvas>
+                <div style="font-family: var(--font-mono); font-size: 11px; color: var(--cyan-primary); margin-top: 6px;">042° NE @ 14.8 km/h</div>
+              </div>
+              <div style="flex: 1; display: flex; flex-direction: column; gap: 10px;">
+                <div class="panel-title">Weather Synopsis</div>
+                <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">
+                  Current airmass is stable maritime tropical. Pressure altitude matches local field elevation. Barometric drift is +0.2 hPa over past 3 hours.
+                </div>
+                <div class="status-indicator-pill status-pill-ready" style="align-self: flex-start;">BAROMETRIC TREND: STABLE</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Weather Metrics Grid -->
+          <div class="weather-grid-metrics">
+            <div class="weather-metric-tile">
+              <div class="metric-tile-head">
+                <span>Temperature</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"></path></svg>
+              </div>
+              <div id="w-temp" class="metric-tile-val">23.4 <span class="status-card-unit">°C</span></div>
+              <div style="font-size: 10.5px; color: var(--text-muted);">Range: 5°C to 38°C</div>
+            </div>
+
+            <div class="weather-metric-tile">
+              <div class="metric-tile-head">
+                <span>Wind Speed</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.7 7.7A7.1 7.1 0 1 1 5 10.8"></path></svg>
+              </div>
+              <div id="w-wind" class="metric-tile-val">14.8 <span class="status-card-unit">km/h</span></div>
+              <div style="font-size: 10.5px; color: var(--green-ready);">Well below limit (28.0 km/h)</div>
+            </div>
+
+            <div class="weather-metric-tile">
+              <div class="metric-tile-head">
+                <span>Wind Direction</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polygon points="12 8 8 12 12 16 12 8"></polygon></svg>
+              </div>
+              <div id="w-direction" class="metric-tile-val">NE <span class="status-card-unit">(042°)</span></div>
+              <div style="font-size: 10.5px; color: var(--text-muted);">Steady cross-range component</div>
+            </div>
+
+            <div class="weather-metric-tile">
+              <div class="metric-tile-head">
+                <span>Relative Humidity</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg>
+              </div>
+              <div id="w-humidity" class="metric-tile-val">54 <span class="status-card-unit">%</span></div>
+              <div style="font-size: 10.5px; color: var(--text-muted);">Max safe: 85%</div>
+            </div>
+
+            <div class="weather-metric-tile">
+              <div class="metric-tile-head">
+                <span>Atmospheric Pressure</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 8 14"></polyline></svg>
+              </div>
+              <div id="w-pressure" class="metric-tile-val">1013.8 <span class="status-card-unit">hPa</span></div>
+              <div style="font-size: 10.5px; color: var(--text-muted);">QNH standard sea-level reference</div>
+            </div>
+
+            <div class="weather-metric-tile">
+              <div class="metric-tile-head">
+                <span>Horizontal Visibility</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              </div>
+              <div id="w-visibility" class="metric-tile-val">16.5 <span class="status-card-unit">km</span></div>
+              <div style="font-size: 10.5px; color: var(--green-ready);">Optimal optical tracking</div>
+            </div>
+
+            <div class="weather-metric-tile">
+              <div class="metric-tile-head">
+                <span>Precipitation Rate</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="19" x2="8" y2="21"></line><line x1="8" y1="13" x2="8" y2="15"></line><line x1="16" y1="19" x2="16" y2="21"></line><line x1="16" y1="13" x2="16" y2="15"></line></svg>
+              </div>
+              <div id="w-precip" class="metric-tile-val">0.0 <span class="status-card-unit">mm/h</span></div>
+              <div style="font-size: 10.5px; color: var(--green-ready);">Zero rain detected</div>
+            </div>
+
+            <div class="weather-metric-tile">
+              <div class="metric-tile-head">
+                <span>Lightning / Radar</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+              </div>
+              <div id="w-lightning" class="metric-tile-val">CLEAR <span class="status-card-unit">(48km)</span></div>
+              <div style="font-size: 10.5px; color: var(--green-ready);">No cell within safety perimeter</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================================================================
+             4. ROCKET SYSTEMS VIEW
+             =================================================================== -->
+        <section id="view-rocket" class="view-section">
+          <div class="view-hero">
+            <div class="hero-titles">
+              <div class="hero-badge-tag">STRUCTURAL & PROPULSION</div>
+              <h1 class="hero-main-title">ROCKET READINESS & AERODYNAMICS</h1>
+              <div class="hero-subtitle">Physical configuration, center of gravity (CG), center of pressure (CP), dynamic stability margins, and airframe telemetry.</div>
+            </div>
+          </div>
+
+          <div class="systems-specs-grid">
+            <!-- Rocket Identification & Mass Breakdown -->
+            <div class="glass-panel">
+              <div class="panel-title" style="margin-bottom: 12px;">Physical Configuration & Mass Properties</div>
+              <div class="spec-list">
+                <div class="spec-row">
+                  <span class="spec-key">Rocket Identification:</span>
+                  <span id="rk-id" class="spec-val">SKYSERVE-MK2 JERICHO</span>
+                </div>
+                <div class="spec-row">
+                  <span class="spec-key">Active Configuration:</span>
+                  <span id="rk-config" class="spec-val">2-Stage Solid Booster + Liquid Upper</span>
+                </div>
+                <div class="spec-row">
+                  <span class="spec-key">Total Wet Mass:</span>
+                  <span id="rk-wet-mass" class="spec-val">142.6 kg</span>
+                </div>
+                <div class="spec-row">
+                  <span class="spec-key">Dry Airframe Mass:</span>
+                  <span id="rk-dry-mass" class="spec-val">88.2 kg</span>
+                </div>
+                <div class="spec-row">
+                  <span class="spec-key">Propellant Load:</span>
+                  <span id="rk-prop-mass" class="spec-val">54.4 kg</span>
+                </div>
+                <div class="spec-row">
+                  <span class="spec-key">Motor Chamber Pressure:</span>
+                  <span id="rk-chamber-pres" class="spec-val">48.5 bar (Nominal)</span>
+                </div>
+                <div class="spec-row">
+                  <span class="spec-key">Structural Integrity:</span>
+                  <span id="rk-integrity" class="spec-val" style="color: var(--green-ready);">100% Nominal</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Aerodynamic Stability Margin (Calibers) -->
+            <div class="glass-panel">
+              <div class="panel-title" style="margin-bottom: 8px;">Aerodynamic Stability Margin Analysis</div>
+              <div style="font-size: 11.5px; color: var(--text-secondary); line-height: 1.4;">
+                Distance between Center of Gravity (CG) and Center of Pressure (CP) normalized by body tube caliber (156 mm).
+              </div>
+
+              <div class="spec-list" style="margin-top: 12px;">
+                <div class="spec-row">
+                  <span class="spec-key">Center of Gravity (CG):</span>
+                  <span id="rk-cg" class="spec-val">1.48 m from tip</span>
+                </div>
+                <div class="spec-row">
+                  <span class="spec-key">Center of Pressure (CP):</span>
+                  <span id="rk-cp" class="spec-val">1.82 m from tip</span>
+                </div>
+                <div class="spec-row">
+                  <span class="spec-key">Calculated Stability Margin:</span>
+                  <span id="rk-margin" class="spec-val" style="color: var(--green-ready);">2.14 Calibers</span>
+                </div>
+              </div>
+
+              <!-- Visual Caliber Spectrum Bar -->
+              <div class="stability-margin-diagram">
+                <div style="display: flex; justify-content: space-between; font-size: 10px; font-family: var(--font-mono); color: var(--text-muted);">
+                  <span>0.0 Cal (Under-stable)</span>
+                  <span style="color: var(--green-ready);">1.5 - 2.5 Cal (Optimal)</span>
+                  <span>4.0 Cal (Over-stable)</span>
+                </div>
+                <div class="stability-bar">
+                  <div id="rk-stability-marker" class="stability-marker" style="left: 53.5%;">
+                    <div class="stability-marker-label">2.14 CAL (OPTIMAL)</div>
+                  </div>
+                </div>
+                <div style="font-size: 10.5px; color: var(--green-ready); text-align: center; margin-top: 8px;">
+                  ✓ Vehicle maintains safe restoring moment across subsonic and transonic regimes.
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================================================================
+             5. AVIONICS VIEW
+             =================================================================== -->
+        <section id="view-avionics" class="view-section">
+          <div class="view-hero">
+            <div class="hero-titles">
+              <div class="hero-badge-tag">HARDWARE HEALTH MONITOR</div>
+              <h1 class="hero-main-title">AVIONICS HEALTH & SENSOR BUS</h1>
+              <div class="hero-subtitle">Real-time status of dual Cortex flight computer, redundant IMU gyros, barometers, high-speed optical pod, and 4S power bus.</div>
+            </div>
+          </div>
+
+          <!-- Avionics Subsystems Tiles -->
+          <div class="avionics-grid">
+            <div class="avionics-card">
+              <div class="card-header-flex">
+                <span class="panel-title">Flight Computer</span>
+                <span id="av-fc-pill" class="avionics-state-pill state-online">ONLINE</span>
+              </div>
+              <div style="font-size: 12px; color: var(--text-secondary);">Dual ARM Cortex-M7 Synchronous</div>
+              <div style="font-family: var(--font-mono); font-size: 11px; color: var(--cyan-primary);">CPU: 18.4% | Tasks: 14/14 Sync</div>
+            </div>
+
+            <div class="avionics-card">
+              <div class="card-header-flex">
+                <span class="panel-title">Dual IMU Gyro</span>
+                <span id="av-imu-pill" class="avionics-state-pill state-online">ONLINE</span>
+              </div>
+              <div style="font-size: 12px; color: var(--text-secondary);">Redundant 9-DOF MEMS Array</div>
+              <div style="font-family: var(--font-mono); font-size: 11px; color: var(--cyan-primary);">Drift: 0.018°/s | Gravity: 9.81 m/s²</div>
+            </div>
+
+            <div class="avionics-card">
+              <div class="card-header-flex">
+                <span class="panel-title">Precision GPS</span>
+                <span id="av-gps-pill" class="avionics-state-pill state-online">ONLINE</span>
+              </div>
+              <div style="font-size: 12px; color: var(--text-secondary);">Multi-Constellation RTK Fix</div>
+              <div style="font-family: var(--font-mono); font-size: 11px; color: var(--cyan-primary);">18 Satellites | HDOP 0.78</div>
+            </div>
+
+            <div class="avionics-card">
+              <div class="card-header-flex">
+                <span class="panel-title">Cabin Temperature</span>
+                <span id="av-temp-pill" class="avionics-state-pill state-online">24.2°C</span>
+              </div>
+              <div style="font-size: 12px; color: var(--text-secondary);">4 Integrated Thermistors</div>
+              <div style="font-family: var(--font-mono); font-size: 11px; color: var(--cyan-primary);">Bay: 22.8°C | Engine: 26.5°C</div>
+            </div>
+
+            <div class="avionics-card">
+              <div class="card-header-flex">
+                <span class="panel-title">Barometric Pressure</span>
+                <span id="av-pres-pill" class="avionics-state-pill state-online">ONLINE</span>
+              </div>
+              <div style="font-size: 12px; color: var(--text-secondary);">Dual BMP390 Altimeter Array</div>
+              <div style="font-family: var(--font-mono); font-size: 11px; color: var(--cyan-primary);">1013.75 hPa (Baseline Locked)</div>
+            </div>
+
+            <div class="avionics-card">
+              <div class="card-header-flex">
+                <span class="panel-title">Optical Pod Camera</span>
+                <span id="av-cam-pill" class="avionics-state-pill state-online">ONLINE</span>
+              </div>
+              <div style="font-size: 12px; color: var(--text-secondary);">1080p 120 FPS High-Speed Stream</div>
+              <div style="font-family: var(--font-mono); font-size: 11px; color: var(--cyan-primary);">Bitrate: 35.0 Mbps | Bit Error: 0</div>
+            </div>
+
+            <div class="avionics-card" style="border-color: var(--amber-warning);">
+              <div class="card-header-flex">
+                <span class="panel-title">4S LiPo Power Bus</span>
+                <span id="av-bat-pill" class="avionics-state-pill state-warning">WARNING</span>
+              </div>
+              <div style="font-size: 12px; color: var(--text-secondary);">Bus Voltage: 14.72V | Draw: 1.45A</div>
+              <div style="font-family: var(--font-mono); font-size: 10.5px; color: var(--amber-warning);">
+                C1: 3.71V | C2: 3.70V | C3: 3.61V ⚠ | C4: 3.70V
+              </div>
+            </div>
+
+            <div class="avionics-card">
+              <div class="card-header-flex">
+                <span class="panel-title">On-Board Storage</span>
+                <span id="av-storage-pill" class="avionics-state-pill state-online">ONLINE</span>
+              </div>
+              <div style="font-size: 12px; color: var(--text-secondary);">High-Speed NVMe Solid State</div>
+              <div style="font-family: var(--font-mono); font-size: 11px; color: var(--cyan-primary);">125.4 GB Free of 128 GB</div>
+            </div>
+
+            <div class="avionics-card">
+              <div class="card-header-flex">
+                <span class="panel-title">Sensor Comm Buses</span>
+                <span id="av-bus-pill" class="avionics-state-pill state-online">ONLINE</span>
+              </div>
+              <div style="font-size: 12px; color: var(--text-secondary);">CAN 2.0B + SPI High-Speed Bus</div>
+              <div style="font-family: var(--font-mono); font-size: 11px; color: var(--green-ready);">0 Bus Retries | 0 Parity Drops</div>
+            </div>
+          </div>
+
+          <!-- Live Battery Waveform Monitor -->
+          <div class="glass-panel" style="margin-top: 20px;">
+            <div class="card-header-flex" style="margin-bottom: 10px;">
+              <div class="panel-title">Avionics Bus Battery Waveform & Cell Load Profile</div>
+              <span class="status-indicator-pill status-pill-warning">CELL #3 ANOMALY FLAGGED</span>
+            </div>
+            <div style="height: 120px;">
+              <canvas id="canvas-battery-wave" class="telemetry-canvas"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================================================================
+             6. TELEMETRY MONITORING VIEW
+             =================================================================== -->
+        <section id="view-telemetry" class="view-section">
+          <div class="view-hero">
+            <div class="hero-titles">
+              <div class="hero-badge-tag">RF GROUND STATION LINK</div>
+              <h1 class="hero-main-title">TELEMETRY & PACKET COMM MONITOR</h1>
+              <div class="hero-subtitle">Downlink signal metrics, packet reception rates, ground tracking pedestal lock, and stream integrity.</div>
+            </div>
+          </div>
+
+          <div class="status-cards-grid">
+            <div class="glass-panel status-card">
+              <div class="status-card-header">
+                <span class="status-card-title">Signal RSSI</span>
+                <span class="status-indicator-pill status-pill-ready">STRONG</span>
+              </div>
+              <div id="tlm-rssi" class="status-card-value">-68 <span class="status-card-unit">dBm</span></div>
+              <div class="status-card-desc">S-Band Tracking Pedestal</div>
+            </div>
+
+            <div class="glass-panel status-card">
+              <div class="status-card-header">
+                <span class="status-card-title">Packet Rate</span>
+                <span class="status-indicator-pill status-pill-ready">NOMINAL</span>
+              </div>
+              <div id="tlm-packet-rate" class="status-card-value">48.2 <span class="status-card-unit">pkts/s</span></div>
+              <div class="status-card-desc">Target: 50.0 pkts/s</div>
+            </div>
+
+            <div class="glass-panel status-card">
+              <div class="status-card-header">
+                <span class="status-card-title">Signal to Noise (SNR)</span>
+                <span class="status-indicator-pill status-pill-ready">EXCELLENT</span>
+              </div>
+              <div id="tlm-snr" class="status-card-value">24.5 <span class="status-card-unit">dB</span></div>
+              <div class="status-card-desc">Min Threshold: 12.0 dB</div>
+            </div>
+
+            <div class="glass-panel status-card">
+              <div class="status-card-header">
+                <span class="status-card-title">Packet Loss Rate</span>
+                <span class="status-indicator-pill status-pill-ready">0.04%</span>
+              </div>
+              <div id="tlm-loss" class="status-card-value">0.04 <span class="status-card-unit">%</span></div>
+              <div class="status-card-desc">Error correction active</div>
+            </div>
+          </div>
+
+          <!-- Oscilloscope & Event Log Split -->
+          <div class="dashboard-split-grid">
+            <div class="glass-panel">
+              <div class="card-header-flex" style="margin-bottom: 8px;">
+                <div class="panel-title">Multi-Channel Telemetry Stream Oscilloscope</div>
+                <span id="tlm-carrier-pill" class="nav-badge badge-ready">CARRIER LOCKED</span>
+              </div>
+              <div class="channel-selector-row">
+                <button class="channel-tab-btn active" data-osc-channel="battery">⚡ 4S LiPo Bus (V)</button>
+                <button class="channel-tab-btn" data-osc-channel="pressure">🔥 Chamber Pressure (bar)</button>
+                <button class="channel-tab-btn" data-osc-channel="rf_rssi">📡 S-Band RSSI (dBm)</button>
+                <button class="channel-tab-btn" data-osc-channel="vibration">📊 3-Axis Accel (G)</button>
+              </div>
+              <div style="height: 160px; margin-bottom: 12px;">
+                <canvas id="canvas-telemetry-stream" class="telemetry-canvas"></canvas>
+              </div>
+              <div style="font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); display: flex; justify-content: space-between;">
+                <span>Modulation: FSK / 2.4 GHz S-Band</span>
+                <span>Bandwidth: 384 kbps</span>
+                <span>Frame Check: CRC-32 VALID</span>
+              </div>
+            </div>
+
+            <div class="glass-panel">
+              <div class="panel-title" style="margin-bottom: 8px;">Telemetry Event Log</div>
+              <div id="tlm-events-list" class="activity-feed-list">
+                <!-- Injected via JS -->
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================================================================
+             7. AI ANALYSIS ENGINE VIEW
+             =================================================================== -->
+        <section id="view-ai" class="view-section">
+          <div class="ai-page-hero">
+            <div>
+              <div class="ai-engine-status-badge">
+                <span class="ai-engine-status-dot"></span>
+                EXPLAINABLE DECISION-SUPPORT ENGINE
+              </div>
+              <h1 class="hero-main-title" style="margin: 6px 0;">AI MISSION VALIDATION ENGINE</h1>
+              <div style="font-size: 12.5px; color: var(--text-secondary); max-width: 680px; line-height: 1.5;">
+                Validates sensor streams, detects physical & temporal anomalies, correlates with historical launch data, and synthesizes clear, explainable risk assessments for mission directors.
+              </div>
+            </div>
+            <button id="btn-run-ai-analysis" class="btn btn-primary" style="padding: 12px 24px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M3 12h3m12 0h3M12 3v3m0 12v3"></path></svg>
+              RUN AI ANALYSIS
+            </button>
+          </div>
+
+          <!-- Diagnostic Pipeline Steps -->
+          <div class="ai-pipeline-steps">
+            <div class="pipeline-step-card active-step">
+              <span class="step-number">STEP 01</span>
+              <span class="step-title">Data Ingestion</span>
+              <span class="step-status">1,420 sensors validated</span>
+            </div>
+            <div class="pipeline-step-card active-step">
+              <span class="step-number">STEP 02</span>
+              <span class="step-title">Predefined Rules</span>
+              <span class="step-status">Safety gates evaluated</span>
+            </div>
+            <div class="pipeline-step-card active-step">
+              <span class="step-number">STEP 03</span>
+              <span class="step-title">Anomaly Detection</span>
+              <span class="step-status">Pattern delta identified</span>
+            </div>
+            <div class="pipeline-step-card active-step">
+              <span class="step-number">STEP 04</span>
+              <span class="step-title">Readiness Decision</span>
+              <span class="step-status" style="color: var(--amber-warning);">Recommendation: HOLD</span>
+            </div>
+          </div>
+
+          <!-- Anomaly Insights Grid -->
+          <div class="card-header-flex" style="margin-bottom: 14px;">
+            <div class="panel-title">Explainable Anomaly Findings & Historical Correlations</div>
+            <div style="font-size: 11px; font-family: var(--font-mono); color: var(--text-muted);">
+              Last Run: <span id="ai-last-run" style="color: #fff;">Today 00:38 UTC</span>
+            </div>
+          </div>
+
+          <div id="ai-anomalies-grid" class="ai-anomaly-cards-grid">
+            <!-- Injected dynamically via JS -->
+          </div>
+        </section>
+
+        <!-- ===================================================================
+             8. READINESS RESULT VIEW
+             =================================================================== -->
+        <section id="view-readiness" class="view-section">
+          <div class="view-hero">
+            <div class="hero-titles">
+              <div class="hero-badge-tag">EXECUTIVE SUMMARY</div>
+              <h1 class="hero-main-title">COMPREHENSIVE READINESS ASSESSMENT</h1>
+              <div class="hero-subtitle">Multi-system synthesized flight readiness determination. High overall mathematical scores cannot override critical blockers.</div>
+            </div>
+            <div class="hero-actions">
+              <button id="btn-readiness-generate-report" class="btn btn-primary">
+                Generate Official Report
+              </button>
+            </div>
+          </div>
+
+          <!-- Hero Score Banner -->
+          <div class="glass-panel" style="padding: 28px; text-align: center; margin-bottom: 24px; background: linear-gradient(180deg, rgba(16,27,54,0.85) 0%, rgba(8,14,28,0.92) 100%);">
+            <div style="font-family: var(--font-heading); font-size: 11px; letter-spacing: 2px; color: var(--text-muted); text-transform: uppercase;">
+              OVERALL MISSION READINESS
+            </div>
+            <div id="res-hero-score" style="font-family: var(--font-heading); font-size: 56px; font-weight: 900; color: #fff; margin: 6px 0;">
+              82%
+            </div>
+            <div id="res-decision-badge" class="mission-decision-pill decision-hold">
+              HOLD
+            </div>
+            <div style="font-size: 12.5px; color: var(--text-secondary); max-width: 600px; margin: 0 auto; line-height: 1.5;">
+              Safety Interlock Advisory: The mathematical readiness score is high (82%), but active critical constraints prevent authorization of physical launch ignition.
+            </div>
+          </div>
+
+          <!-- Score Breakdown Cards -->
+          <div class="status-cards-grid">
+            <div class="glass-panel status-card">
+              <div class="status-card-title">Weather Score</div>
+              <div id="res-score-weather" class="status-card-value">94%</div>
+              <div class="status-card-desc">Favorable trajectory</div>
+            </div>
+            <div class="glass-panel status-card">
+              <div class="status-card-title">Rocket Systems</div>
+              <div id="res-score-rocket" class="status-card-value">91%</div>
+              <div class="status-card-desc">Stability 2.14 calibers</div>
+            </div>
+            <div class="glass-panel status-card">
+              <div class="status-card-title">Avionics Health</div>
+              <div id="res-score-avionics" class="status-card-value">76%</div>
+              <div class="status-card-desc" style="color: var(--amber-warning);">Battery sag warning</div>
+            </div>
+            <div class="glass-panel status-card">
+              <div class="status-card-title">Telemetry Link</div>
+              <div id="res-score-telemetry" class="status-card-value">79%</div>
+              <div class="status-card-desc" style="color: var(--amber-warning);">UHF packet jitter</div>
+            </div>
+            <div class="glass-panel status-card">
+              <div class="status-card-title">Checklist Score</div>
+              <div id="res-score-checklist" class="status-card-value">81%</div>
+              <div class="status-card-desc">18 / 22 verified</div>
+            </div>
+            <div class="glass-panel status-card">
+              <div class="status-card-title">AI Risk Level</div>
+              <div id="res-ai-risk" class="status-card-value" style="font-size: 18px; color: var(--amber-warning);">MEDIUM</div>
+              <div class="status-card-desc">Explainable insights</div>
+            </div>
+          </div>
+
+          <!-- Critical Blockers & Recommended Actions Split -->
+          <div class="systems-specs-grid">
+            <div class="glass-panel">
+              <div class="panel-title" style="margin-bottom: 12px; color: var(--red-critical);">Identified Critical Issues & Warnings</div>
+              <div id="res-critical-blockers" style="display: flex; flex-direction: column; gap: 8px;">
+                <!-- Populated via JS -->
+              </div>
+            </div>
+
+            <div class="glass-panel">
+              <div class="panel-title" style="margin-bottom: 12px; color: var(--cyan-primary);">Required Corrective Actions</div>
+              <div id="res-recommended-actions">
+                <!-- Populated via JS -->
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================================================================
+             9. REPORTS VIEW
+             =================================================================== -->
+        <section id="view-reports" class="view-section">
+          <div class="view-hero">
+            <div class="hero-titles">
+              <div class="hero-badge-tag">AUDIT & CERTIFICATION</div>
+              <h1 class="hero-main-title">MISSION READINESS REPORTS</h1>
+              <div class="hero-subtitle">Archived flight readiness reviews, static fire certificates, and telemetry audit exports.</div>
+            </div>
+            <div class="hero-actions">
+              <button class="btn btn-secondary" onclick="window.SkyserveApp.downloadTelemetryCSV()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Download Telemetry CSV
+              </button>
+              <button class="btn btn-secondary" onclick="window.SkyserveApp.exportMissionJSON()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"></polyline><line x1="12" y1="12" x2="12" y2="21"></line><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"></path></svg>
+                Export JSON
+              </button>
+              <button class="btn btn-secondary" onclick="document.getElementById('input-json-import').click()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="8 8 12 4 16 8"></polyline><line x1="12" y1="4" x2="12" y2="13"></line><path d="M20.39 18.39A5 5 0 0 1 18 21H6a5 5 0 0 1-5-5"></path></svg>
+                Import JSON
+              </button>
+              <input type="file" id="input-json-import" accept=".json" style="display: none;" onchange="window.SkyserveApp.importMissionJSON(event)">
+              <button class="btn btn-primary" onclick="window.SkyserveApp.openReportModal()">
+                Generate New Report
+              </button>
+            </div>
+          </div>
+
+          <div id="reports-history-list">
+            <!-- Populated via JS -->
+          </div>
+        </section>
+
+        <!-- ===================================================================
+             10. DATA & LOGS VIEW
+             =================================================================== -->
+        <section id="view-logs" class="view-section">
+          <div class="view-hero">
+            <div class="hero-titles">
+              <div class="hero-badge-tag">FLIGHT TELEMETRY AUDIT</div>
+              <h1 class="hero-main-title">SYSTEM DATA & AUDIT LOGS</h1>
+              <div class="hero-subtitle">High-speed audit trail recording sensor events, user commands, and AI risk determinations.</div>
+            </div>
+          </div>
+
+          <!-- Filter Toolbar -->
+          <div class="checklist-filter-bar" style="margin-bottom: 14px;">
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <input id="logs-search-filter" type="text" class="form-control" placeholder="Search event logs..." style="width: 260px;">
+              <select id="logs-category-select" class="form-control" style="width: 160px;">
+                <option value="ALL">All Categories</option>
+                <option value="TELEMETRY">Telemetry</option>
+                <option value="AVIONICS">Avionics</option>
+                <option value="WEATHER">Weather</option>
+                <option value="AI-ENGINE">AI Engine</option>
+                <option value="SECURITY">Security</option>
+                <option value="CHECKLIST">Checklist</option>
+              </select>
+            </div>
+          </div>
+
+          <table class="mc-table">
+            <thead>
+              <tr>
+                <th>Event ID</th>
+                <th>Time (UTC)</th>
+                <th>Category</th>
+                <th>Diagnostic Event Message</th>
+              </tr>
+            </thead>
+            <tbody id="logs-table-body">
+              <!-- Populated via JS -->
+            </tbody>
+          </table>
+        </section>
+
+        <!-- ===================================================================
+             11. AUTHENTICATION & ROLES VIEW
+             =================================================================== -->
+        <section id="view-auth" class="view-section">
+          <div class="view-hero">
+            <div class="hero-titles">
+              <div class="hero-badge-tag">SECURITY & GOVERNANCE</div>
+              <h1 class="hero-main-title">USER AUTHENTICATION & ROLE ACCESS</h1>
+              <div class="hero-subtitle">Role-based permission matrix governing checklist signatures, telemetry verification, and system parameter modifications.</div>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+            <div class="glass-panel auth-role-card" data-role="Admin" style="cursor: pointer;">
+              <div class="card-header-flex">
+                <span class="panel-title">Flight Director</span>
+                <span class="status-indicator-pill status-pill-ready">ADMIN</span>
+              </div>
+              <div style="font-size: 12px; color: var(--text-secondary); margin: 10px 0; line-height: 1.5;">
+                Full authority to modify launch criteria limits, override non-critical warnings, trigger AI re-scans, and sign off executive certifications.
+              </div>
+              <div style="font-family: var(--font-mono); font-size: 11px; color: var(--cyan-primary);">Active User: Dr. Elena Cruz</div>
+            </div>
+
+            <div class="glass-panel auth-role-card" data-role="Engineer" style="cursor: pointer;">
+              <div class="card-header-flex">
+                <span class="panel-title">Avionics Lead</span>
+                <span class="status-indicator-pill status-pill-info">ENGINEER</span>
+              </div>
+              <div style="font-size: 12px; color: var(--text-secondary); margin: 10px 0; line-height: 1.5;">
+                Authorized to sign technical checklist items, calibrate sensor zero-rates, and execute diagnostic tests. Cannot modify range safety rules.
+              </div>
+              <div style="font-family: var(--font-mono); font-size: 11px; color: var(--cyan-primary);">User: Saurav Roy</div>
+            </div>
+
+            <div class="glass-panel auth-role-card" data-role="Viewer" style="cursor: pointer;">
+              <div class="card-header-flex">
+                <span class="panel-title">Range Observer</span>
+                <span class="status-indicator-pill status-pill-warning">VIEWER</span>
+              </div>
+              <div style="font-size: 12px; color: var(--text-secondary); margin: 10px 0; line-height: 1.5;">
+                Read-only access to mission telemetry displays, weather streams, and generated readiness reports. Checklist signatures disabled.
+              </div>
+              <div style="font-family: var(--font-mono); font-size: 11px; color: var(--cyan-primary);">User: Alex Vance</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================================================================
+             11B. ADMIN PANEL VIEW (RESTRICTED TO ROLE: ADMIN)
+             =================================================================== -->
+        <section id="view-admin" class="view-section">
+          <div class="view-hero">
+            <div class="hero-titles">
+              <div class="hero-badge-tag">MISSION GOVERNANCE & ACCESS CONTROL</div>
+              <h1 class="hero-main-title">ADMINISTRATION & SECURITY PERIMETER</h1>
+              <div class="hero-subtitle">Role-based access management, credential provisioning, temporary passphrases, and immutable system audit trail.</div>
+            </div>
+            <div class="hero-actions-group">
+              <button id="btn-admin-open-create" class="btn btn-primary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <span>Create User Account</span>
+              </button>
+              <button id="btn-admin-refresh" class="btn btn-secondary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                <span>Refresh Data</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Quick Statistics Metric Grid -->
+          <div class="admin-stats-grid">
+            <div class="admin-stat-card">
+              <span class="admin-stat-label">Total Personnel</span>
+              <span id="stat-total-users" class="admin-stat-val">0</span>
+            </div>
+            <div class="admin-stat-card">
+              <span class="admin-stat-label">Active Administrators</span>
+              <span id="stat-total-admins" class="admin-stat-val" style="color: var(--cyan-primary);">0</span>
+            </div>
+            <div class="admin-stat-card">
+              <span class="admin-stat-label">Standard Field Users</span>
+              <span id="stat-total-standard" class="admin-stat-val" style="color: var(--blue-info);">0</span>
+            </div>
+            <div class="admin-stat-card">
+              <span class="admin-stat-label">Audit Log Events</span>
+              <span id="stat-total-audit" class="admin-stat-val" style="color: var(--green-ready);">0</span>
+            </div>
+          </div>
+
+          <!-- Section 1: Personnel Directory -->
+          <div class="glass-panel" style="margin-bottom: 24px;">
+            <div class="card-header-flex" style="margin-bottom: 16px;">
+              <div>
+                <div class="panel-title">MISSION PERSONNEL ROSTER</div>
+                <div style="font-size: 11px; color: var(--text-muted);">Configured credentials, security roles, and active accounts.</div>
+              </div>
+            </div>
+
+            <div class="admin-table-container">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Personnel</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Credential State</th>
+                    <th>Last Authenticated</th>
+                    <th>Administrative Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-users-tbody">
+                  <tr>
+                    <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px;">
+                      Loading personnel database...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Section 2: Immutable Security Audit Log -->
+          <div class="glass-panel">
+            <div class="card-header-flex" style="margin-bottom: 16px;">
+              <div>
+                <div class="panel-title">SECURITY AUDIT TRAIL</div>
+                <div style="font-size: 11px; color: var(--text-muted);">Real-time log of authentications, role modifications, and credential resets.</div>
+              </div>
+            </div>
+
+            <div class="admin-table-container">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Timestamp (UTC)</th>
+                    <th>Event Type</th>
+                    <th>Target User</th>
+                    <th>Actor</th>
+                    <th>IP Address</th>
+                    <th>Result</th>
+                    <th>Details</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-audit-tbody">
+                  <tr>
+                    <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 20px;">
+                      Loading audit records...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================================================================
+             12. SETTINGS VIEW
+             =================================================================== -->
+        <section id="view-settings" class="view-section">
+          <div class="view-hero">
+            <div class="hero-titles">
+              <div class="hero-badge-tag">SYSTEM CALIBRATION</div>
+              <h1 class="hero-main-title">MISSION CRITERIA & CONFIGURATION</h1>
+              <div class="hero-subtitle">Define hardware limits, AI sensitivity coefficients, and telemetry ingest frequencies.</div>
+            </div>
+          </div>
+
+          <div class="systems-specs-grid">
+            <div class="glass-panel">
+              <div class="panel-title" style="margin-bottom: 12px;">Launch Go/No-Go Thresholds</div>
+              <div class="spec-list">
+                <div class="spec-row">
+                  <span class="spec-key">Max Allowable Ground Wind:</span>
+                  <span class="spec-val">28.0 km/h</span>
+                </div>
+                <div class="spec-row">
+                  <span class="spec-key">Minimum Aerodynamic Stability:</span>
+                  <span class="spec-val">1.50 Calibers</span>
+                </div>
+                <div class="spec-row">
+                  <span class="spec-key">Maximum Aerodynamic Stability:</span>
+                  <span class="spec-val">2.80 Calibers</span>
+                </div>
+                <div class="spec-row">
+                  <span class="spec-key">Min 4S LiPo Total Voltage:</span>
+                  <span class="spec-val">14.80 V</span>
+                </div>
+                <div class="spec-row">
+                  <span class="spec-key">Min S-Band Receiver RSSI:</span>
+                  <span class="spec-val">-85 dBm</span>
+                </div>
+                <div class="spec-row">
+                  <span class="spec-key">Mandatory Critical Checklist Completion:</span>
+                  <span class="spec-val" style="color: var(--green-ready);">ENFORCED (100%)</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="glass-panel">
+              <div class="panel-title" style="margin-bottom: 12px;">AI Model Configuration</div>
+              <div class="spec-list">
+                <div class="spec-row">
+                  <span class="spec-key">Decision Model Core:</span>
+                  <span class="spec-val">SkyServe Aero-Hybrid ML v4.2</span>
+                </div>
+                <div class="spec-row">
+                  <span class="spec-key">Historical Training Base:</span>
+                  <span class="spec-val">42 High-Power Flight Tests</span>
+                </div>
+                <div class="spec-row">
+                  <span class="spec-key">Anomaly Sensitivity Factor:</span>
+                  <span class="spec-val">0.95 (High Precision)</span>
+                </div>
+                <div class="spec-row">
+                  <span class="spec-key">Autonomous Physical Ignition:</span>
+                  <span class="spec-val" style="color: var(--red-critical);">PROHIBITED (Human Final GO)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MODAL: FULL AI SCAN SIMULATION
+       ========================================================================= -->
+  <div id="modal-ai-diagnostics" class="mc-modal-overlay">
+    <div class="mc-modal-content">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M3 12h3m12 0h3M12 3v3m0 12v3"></path></svg>
+          RUNNING DEEP AI TELEMETRY ANALYSIS
+        </div>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="diagnostic-scan-box">
+          <div class="radar-scanner">
+            <div class="radar-beam"></div>
+          </div>
+          <div id="ai-scan-stage-label" style="font-family: var(--font-heading); font-size: 12px; color: var(--cyan-primary);">
+            Scanning active telemetry packets...
+          </div>
+        </div>
+        <div id="ai-scan-terminal" class="diagnostic-log-terminal">
+          <!-- Populated live via JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MODAL: FLIGHT READINESS REPORT PREVIEW & PRINT
+       ========================================================================= -->
+  <div id="modal-report" class="mc-modal-overlay">
+    <div class="mc-modal-content">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+          OFFICIAL FLIGHT READINESS REPORT
+        </div>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <div id="modal-report-content" class="modal-body">
+        <!-- Injected dynamically via JS -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" onclick="window.print()">Print / Export PDF</button>
+        <button class="btn btn-primary btn-sm" onclick="window.SkyserveApp.closeModal('modal-report')">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MODAL: QUICK SEARCH PALETTE (Ctrl + K)
+       ========================================================================= -->
+  <div id="modal-search" class="mc-modal-overlay">
+    <div class="mc-modal-content" style="max-width: 520px;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          QUICK SEARCH PALETTE
+        </div>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="text" class="form-control" placeholder="Jump to section, telemetry tag, or checklist item..." autofocus oninput="/* filter */">
+        <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 10px;">
+          <div class="insight-pill" onclick="window.SkyserveApp.closeModal('modal-search'); window.SkyserveApp.switchView('checklist');" style="cursor: pointer;">
+            <span>→ Jump to Pre-Launch Checklist (18/22)</span>
+          </div>
+          <div class="insight-pill" onclick="window.SkyserveApp.closeModal('modal-search'); window.SkyserveApp.switchView('avionics');" style="cursor: pointer;">
+            <span>→ Jump to Avionics Battery Diagnostics</span>
+          </div>
+          <div class="insight-pill" onclick="window.SkyserveApp.closeModal('modal-search'); window.SkyserveApp.switchView('weather');" style="cursor: pointer;">
+            <span>→ Jump to Weather & Wind Shear Limits</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MODAL: SYSTEM NOTIFICATIONS
+       ========================================================================= -->
+  <div id="modal-notifications" class="mc-modal-overlay">
+    <div class="mc-modal-content" style="max-width: 520px;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+          SYSTEM NOTIFICATIONS
+        </div>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="reason-item warning" style="padding: 10px; background: rgba(255,179,0,0.1); border-radius: 6px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line></svg>
+          <div>
+            <strong>Cell #3 Voltage Sag:</strong> Under avionics bus pre-heat draw, cell #3 dipped to 3.61V.
+          </div>
+        </div>
+        <div class="reason-item warning" style="padding: 10px; background: rgba(255,179,0,0.1); border-radius: 6px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line></svg>
+          <div>
+            <strong>Checklist Interlock:</strong> 2 critical checklist items remain unsigned. Mission held at HOLD.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MODALS: ADMIN PERSONNEL & CREDENTIAL MANAGEMENT
+       ========================================================================= -->
+
+  <!-- Modal 1: Create User Modal -->
+  <div id="modal-create-user" class="mc-modal-overlay" style="display: none;">
+    <div class="mc-modal-content">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+          PROVISION MISSION PERSONNEL ACCOUNT
+        </div>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <form id="form-admin-create-user">
+        <div class="modal-body">
+          <div id="modal-create-alert" class="auth-alert-box auth-alert-error" style="display:none;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line></svg>
+            <span id="modal-create-alert-text">Error message</span>
+          </div>
+
+          <div class="modal-form-group">
+            <label class="modal-label" for="create-user-name">Full Personnel Name</label>
+            <input id="create-user-name" type="text" class="modal-input" placeholder="e.g. Elena Cruz" required autocomplete="off">
+          </div>
+
+          <div class="modal-form-group">
+            <label class="modal-label" for="create-user-username">Username (Mission Identifier)</label>
+            <input id="create-user-username" type="text" class="modal-input" placeholder="e.g. elena.cruz" required autocomplete="off">
+          </div>
+
+          <div class="modal-form-group">
+            <label class="modal-label" for="create-user-email">Official Email (Optional)</label>
+            <input id="create-user-email" type="email" class="modal-input" placeholder="e.g. elena.cruz@skyserve.aero" autocomplete="off">
+          </div>
+
+          <div class="modal-form-group">
+            <label class="modal-label" for="create-user-role">Assigned Authorization Role</label>
+            <select id="create-user-role" class="modal-select">
+              <option value="USER" selected>USER (Launch Checklist & Telemetry)</option>
+              <option value="ADMIN">ADMIN (Full Governance & Security)</option>
+            </select>
+          </div>
+
+          <div style="font-size: 11px; color: var(--text-muted); line-height: 1.5; background: rgba(5,8,17,0.4); padding: 10px; border-radius: 6px; border: 1px solid var(--border-subtle);">
+            <strong>Security Notice:</strong> The system will generate a strong one-time temporary passphrase that will be displayed once. The user must rotate it at initial login.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-modal-cancel">Cancel</button>
+          <button id="btn-submit-create-user" type="submit" class="btn btn-primary">GENERATE ACCOUNT & PASSPHRASE</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 2: Temporary Credentials Reveal Modal -->
+  <div id="modal-temp-credentials" class="mc-modal-overlay" style="display: none;">
+    <div class="mc-modal-content" style="max-width: 480px;">
+      <div class="modal-header">
+        <div id="temp-cred-title" class="modal-title" style="color: var(--cyan-primary);">
+          TEMPORARY PASSPHRASE GENERATED
+        </div>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.5;">
+          Provide these one-time temporary credentials to the user securely. This passphrase will not be shown again. The user will be required to change it at first login.
+        </div>
+
+        <div class="temp-cred-box">
+          <div style="font-size: 10px; font-family: var(--font-heading); color: var(--text-muted); margin-bottom: 4px;">MISSION USERNAME:</div>
+          <div id="temp-cred-user-val" style="font-family: var(--font-mono); font-size: 14px; color: #fff; margin-bottom: 12px;">--</div>
+
+          <div style="font-size: 10px; font-family: var(--font-heading); color: var(--text-muted); margin-bottom: 4px;">TEMPORARY PASSPHRASE:</div>
+          <div class="temp-cred-val">
+            <span id="temp-cred-pass-val">--</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-copy-temp-creds" type="button" class="btn btn-secondary">COPY PASSPHRASE</button>
+        <button type="button" class="btn btn-primary btn-modal-cancel">DONE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 3: Change Password Modal (Voluntary or Mandatory) -->
+  <div id="modal-change-password-app" class="mc-modal-overlay" style="display: none;">
+    <div class="mc-modal-content">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          ROTATE SECURITY PASSPHRASE
+        </div>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <form id="form-modal-change-password">
+        <div class="modal-body">
+          <div id="modal-cp-alert" class="auth-alert-box auth-alert-error" style="display:none;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line></svg>
+            <span id="modal-cp-alert-text">Error message</span>
+          </div>
+
+          <div class="modal-form-group">
+            <label class="modal-label" for="modal-cp-current-password">Current / Temporary Password</label>
+            <input id="modal-cp-current-password" type="password" class="modal-input" required autocomplete="current-password">
+          </div>
+
+          <div class="modal-form-group">
+            <label class="modal-label" for="modal-cp-new-password">New Mission Passphrase</label>
+            <input id="modal-cp-new-password" type="password" class="modal-input" placeholder="Min 10 chars, upper, lower, number, symbol" required autocomplete="new-password">
+          </div>
+
+          <!-- Real-Time Password Policy Checklist -->
+          <ul class="policy-list">
+            <li id="modal-rule-length" class="policy-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle></svg>
+              <span>At least 10 characters</span>
+            </li>
+            <li id="modal-rule-upper" class="policy-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle></svg>
+              <span>One uppercase letter (A-Z)</span>
+            </li>
+            <li id="modal-rule-lower" class="policy-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle></svg>
+              <span>One lowercase letter (a-z)</span>
+            </li>
+            <li id="modal-rule-number" class="policy-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle></svg>
+              <span>One numeric digit (0-9)</span>
+            </li>
+            <li id="modal-rule-symbol" class="policy-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle></svg>
+              <span>One special symbol (!@#$%...)</span>
+            </li>
+          </ul>
+
+          <div class="modal-form-group">
+            <label class="modal-label" for="modal-cp-confirm-password">Confirm New Passphrase</label>
+            <input id="modal-cp-confirm-password" type="password" class="modal-input" placeholder="Re-enter new passphrase" required autocomplete="new-password">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="btn-modal-cp-cancel" type="button" class="btn btn-secondary btn-modal-cancel">Cancel</button>
+          <button id="btn-submit-modal-cp" type="submit" class="btn btn-primary">CONFIRM PASSPHRASE UPDATE</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 4: Reusable Confirmation Dialog -->
+  <div id="modal-confirm-action" class="mc-modal-overlay" style="display: none;">
+    <div class="mc-modal-content" style="max-width: 440px;">
+      <div class="modal-header">
+        <div id="modal-confirm-title" class="modal-title">CONFIRM ACTION</div>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="modal-confirm-message" style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;"></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-modal-cancel">Cancel</button>
+        <button id="btn-confirm-action-submit" type="button" class="btn btn-primary">CONFIRM</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Script Assets -->
+  <script src="js/state.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SKYSERVE | Mission Authentication Gate</title>
+  <meta name="description" content="Secure authentication gate for SKYSERVE AI Readiness Rocket Launch Mission Control.">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2300e5ff'><polygon points='12 2 19 21 12 17 5 21 12 2'/></svg>">
+  <style>
+    .auth-page-container {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .auth-card-wrapper {
+      width: 100%;
+      max-width: 460px;
+    }
+
+    .auth-glass-box {
+      background: rgba(10, 18, 38, 0.82);
+      backdrop-filter: var(--glass-blur-heavy);
+      -webkit-backdrop-filter: var(--glass-blur-heavy);
+      border: 1px solid var(--border-cyan);
+      border-radius: var(--radius-xl);
+      padding: 36px 32px;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.7), 0 0 32px rgba(0, 229, 255, 0.15);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .auth-glass-box::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--cyan-primary), transparent);
+    }
+
+    .auth-header-center {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .auth-logo-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 56px;
+      height: 56px;
+      background: rgba(0, 229, 255, 0.1);
+      border: 1px solid var(--cyan-primary);
+      border-radius: 14px;
+      margin-bottom: 16px;
+      box-shadow: 0 0 24px rgba(0, 229, 255, 0.35);
+    }
+
+    .auth-logo-badge svg {
+      width: 30px;
+      height: 30px;
+      color: var(--cyan-primary);
+      filter: drop-shadow(0 0 6px var(--cyan-primary));
+    }
+
+    .auth-brand-title {
+      font-family: var(--font-heading);
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: 3px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .auth-brand-sub {
+      font-family: var(--font-heading);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: var(--cyan-primary);
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+
+    .auth-badge-classified {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      letter-spacing: 1px;
+      color: var(--amber-warning);
+      background: var(--amber-bg);
+      border: 1px solid rgba(255, 179, 0, 0.3);
+      padding: 3px 10px;
+      border-radius: 20px;
+      margin-top: 10px;
+    }
+
+    .auth-form-group {
+      margin-bottom: 20px;
+      position: relative;
+    }
+
+    .auth-label {
+      display: block;
+      font-family: var(--font-heading);
+      font-size: 10.5px;
+      letter-spacing: 1px;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    .auth-input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .auth-input-icon {
+      position: absolute;
+      left: 14px;
+      color: var(--text-muted);
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+    }
+
+    .auth-input-icon svg {
+      width: 17px;
+      height: 17px;
+    }
+
+    .auth-input {
+      width: 100%;
+      background: rgba(14, 25, 52, 0.7);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      color: #fff;
+      font-family: var(--font-body);
+      font-size: 13.5px;
+      padding: 12px 42px 12px 42px;
+      transition: all 0.2s ease;
+      outline: none;
+    }
+
+    .auth-input:focus {
+      border-color: var(--cyan-primary);
+      box-shadow: 0 0 16px rgba(0, 229, 255, 0.3);
+      background: rgba(16, 29, 60, 0.9);
+    }
+
+    .auth-toggle-pwd {
+      position: absolute;
+      right: 12px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      transition: color 0.2s;
+    }
+
+    .auth-toggle-pwd:hover {
+      color: var(--cyan-primary);
+    }
+
+    .auth-toggle-pwd svg {
+      width: 17px;
+      height: 17px;
+    }
+
+    .auth-btn-submit {
+      width: 100%;
+      padding: 13px;
+      font-size: 12px;
+      letter-spacing: 1.5px;
+      margin-top: 10px;
+      justify-content: center;
+    }
+
+    .auth-alert-box {
+      display: none;
+      padding: 12px 14px;
+      border-radius: var(--radius-md);
+      font-size: 12px;
+      margin-bottom: 20px;
+      align-items: center;
+      gap: 10px;
+      animation: alert-fade 0.2s ease;
+    }
+
+    .auth-alert-error {
+      background: rgba(255, 23, 68, 0.14);
+      border: 1px solid rgba(255, 23, 68, 0.4);
+      color: #ff5252;
+    }
+
+    .auth-alert-success {
+      background: rgba(0, 230, 118, 0.12);
+      border: 1px solid rgba(0, 230, 118, 0.4);
+      color: var(--green-ready);
+    }
+
+    .auth-alert-info {
+      background: rgba(0, 229, 255, 0.1);
+      border: 1px solid var(--border-cyan);
+      color: var(--cyan-primary);
+    }
+
+    @keyframes alert-fade {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .auth-footer-notice {
+      text-align: center;
+      margin-top: 24px;
+      padding-top: 18px;
+      border-top: 1px solid var(--border-subtle);
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .auth-footer-notice strong {
+      color: var(--text-secondary);
+    }
+
+    /* Policy checklist */
+    .policy-list {
+      list-style: none;
+      padding: 0;
+      margin: 12px 0 20px;
+      background: rgba(5, 8, 17, 0.5);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .policy-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-muted);
+      transition: color 0.2s;
+    }
+
+    .policy-item.valid {
+      color: var(--green-ready);
+    }
+
+    .policy-item svg {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+    }
+
+    /* Spinner */
+    .btn-spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Cinematic Background Layer Stack -->
+  <div class="cinematic-bg-container">
+    <div class="cinematic-bg-image"></div>
+    <div class="cinematic-bg-overlay"></div>
+    <div class="space-grid-pattern"></div>
+  </div>
+
+  <div class="auth-page-container">
+    <div class="auth-card-wrapper">
+
+      <!-- =====================================================================
+           VIEW A: STANDARD LOGIN VIEW
+           ===================================================================== -->
+      <div id="panel-login" class="auth-glass-box">
+        <div class="auth-header-center">
+          <div class="auth-logo-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 19 21 12 17 5 21 12 2"></polygon>
+            </svg>
+          </div>
+          <h1 class="auth-brand-title">
+            <span>SKYSERVE</span>
+            <span class="interlock-dot" title="Security Perimeter Active"></span>
+          </h1>
+          <div class="auth-brand-sub">AI READINESS ROCKET LAUNCH CHECKER</div>
+          <div class="auth-badge-classified">RESTRICTED MISSION ACCESS // LEVEL 4</div>
+        </div>
+
+        <!-- Alert Notification Box -->
+        <div id="login-alert" class="auth-alert-box auth-alert-error" role="alert">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          <span id="login-alert-text">Invalid credentials.</span>
+        </div>
+
+        <!-- Login Form -->
+        <form id="form-login" autocomplete="off" novalidate>
+          <div class="auth-form-group">
+            <label class="auth-label" for="login-username">Mission Identifier / Username</label>
+            <div class="auth-input-wrapper">
+              <span class="auth-input-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+              </span>
+              <input 
+                id="login-username" 
+                name="username" 
+                type="text" 
+                class="auth-input" 
+                placeholder="e.g. aayush.devre" 
+                required 
+                autocomplete="username" 
+                autofocus
+              >
+            </div>
+          </div>
+
+          <div class="auth-form-group">
+            <label class="auth-label" for="login-password">Access Passphrase / Password</label>
+            <div class="auth-input-wrapper">
+              <span class="auth-input-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+              </span>
+              <input 
+                id="login-password" 
+                name="password" 
+                type="password" 
+                class="auth-input" 
+                placeholder="Enter your security passphrase" 
+                required 
+                autocomplete="current-password"
+              >
+              <button type="button" class="auth-toggle-pwd" id="btn-toggle-pwd" aria-label="Toggle password visibility">
+                <svg class="eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                <svg class="eye-closed" style="display:none;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+              </button>
+            </div>
+          </div>
+
+          <button id="btn-login-submit" type="submit" class="btn btn-primary auth-btn-submit">
+            <span id="login-btn-content">AUTHENTICATE MISSION CONTROL</span>
+          </button>
+        </form>
+
+        <div class="auth-footer-notice">
+          <strong>Access Notice:</strong> Public registration is strictly prohibited. Access is issued by your mission administrator.
+        </div>
+      </div>
+
+      <!-- =====================================================================
+           VIEW B: MANDATORY FIRST-LOGIN PASSWORD ROTATION
+           ===================================================================== -->
+      <div id="panel-change-password" class="auth-glass-box" style="display: none;">
+        <div class="auth-header-center">
+          <div class="auth-logo-badge" style="border-color: var(--amber-warning); background: var(--amber-bg);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--amber-warning); filter: drop-shadow(0 0 6px var(--amber-warning));">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+          </div>
+          <h2 class="auth-brand-title" style="font-size: 20px;">SECURITY ROTATION</h2>
+          <div class="auth-brand-sub" style="color: var(--amber-warning);">MANDATORY PASSPHRASE UPDATE</div>
+          <div class="auth-badge-classified" style="color: var(--cyan-primary); background: var(--cyan-muted); border-color: var(--border-cyan);">FIRST LOGIN CREDENTIAL POLICY</div>
+        </div>
+
+        <div id="change-alert" class="auth-alert-box auth-alert-error" role="alert">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          <span id="change-alert-text">Password update failed.</span>
+        </div>
+
+        <form id="form-change-password" autocomplete="off" novalidate>
+          <div class="auth-form-group">
+            <label class="auth-label" for="cp-current-password">Current / Temporary Password</label>
+            <div class="auth-input-wrapper">
+              <span class="auth-input-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+              </span>
+              <input 
+                id="cp-current-password" 
+                name="currentPassword" 
+                type="password" 
+                class="auth-input" 
+                placeholder="Enter current password" 
+                required 
+                autocomplete="current-password"
+              >
+            </div>
+          </div>
+
+          <div class="auth-form-group">
+            <label class="auth-label" for="cp-new-password">New Mission Passphrase</label>
+            <div class="auth-input-wrapper">
+              <span class="auth-input-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+              </span>
+              <input 
+                id="cp-new-password" 
+                name="newPassword" 
+                type="password" 
+                class="auth-input" 
+                placeholder="Enter at least 10 characters" 
+                required 
+                autocomplete="new-password"
+              >
+              <button type="button" class="auth-toggle-pwd" id="btn-toggle-new-pwd" aria-label="Toggle password visibility">
+                <svg class="eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                <svg class="eye-closed" style="display:none;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Real-Time Password Policy Checklist -->
+          <ul class="policy-list">
+            <li id="rule-length" class="policy-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle></svg>
+              <span>At least 10 characters</span>
+            </li>
+            <li id="rule-upper" class="policy-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle></svg>
+              <span>One uppercase letter (A-Z)</span>
+            </li>
+            <li id="rule-lower" class="policy-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle></svg>
+              <span>One lowercase letter (a-z)</span>
+            </li>
+            <li id="rule-number" class="policy-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle></svg>
+              <span>One numeric digit (0-9)</span>
+            </li>
+            <li id="rule-symbol" class="policy-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle></svg>
+              <span>One special symbol (!@#$%...)</span>
+            </li>
+          </ul>
+
+          <div class="auth-form-group">
+            <label class="auth-label" for="cp-confirm-password">Confirm New Passphrase</label>
+            <div class="auth-input-wrapper">
+              <span class="auth-input-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </span>
+              <input 
+                id="cp-confirm-password" 
+                name="confirmPassword" 
+                type="password" 
+                class="auth-input" 
+                placeholder="Re-enter new passphrase" 
+                required 
+                autocomplete="new-password"
+              >
+            </div>
+          </div>
+
+          <button id="btn-change-submit" type="submit" class="btn btn-primary auth-btn-submit">
+            <span id="change-btn-content">ROTATE PASSPHRASE & ENTER MISSION CONTROL</span>
+          </button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="js/login.js"></script>
+</body>
+</html>
