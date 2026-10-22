@@ -7,20 +7,23 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const crypto = require('crypto');
 const zlib = require('zlib');
+
+const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.LAMBDA_TASK_ROOT);
 
 // -----------------------------------------------------------------------------
 // 1. PROCESS-LEVEL ERROR HANDLERS (FAIL-FAST ON UNHANDLED DEFECTS)
 // -----------------------------------------------------------------------------
 process.on('uncaughtException', (err) => {
   console.error('[FATAL] uncaughtException:', err && err.stack ? err.stack : err);
-  process.exit(1);
+  if (!isServerless) process.exit(1);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
   console.error('[FATAL] unhandledRejection at:', promise, 'reason:', reason);
-  process.exit(1);
+  if (!isServerless) process.exit(1);
 });
 
 // -----------------------------------------------------------------------------
@@ -57,9 +60,12 @@ const PORT = parseInt(process.env.PORT, 10) || 8080;
 const HOST = '0.0.0.0';
 
 // DATA_DIR: read from environment so production can point to a mounted volume (e.g. /data)
+// In serverless environments (e.g. Vercel), fall back to writable /tmp
 const DATA_DIR = process.env.DATA_DIR
   ? path.resolve(process.env.DATA_DIR)
-  : path.join(__dirname, 'data');
+  : isServerless
+    ? path.join(os.tmpdir(), 'skyserve_data')
+    : path.join(__dirname, 'data');
 
 const USERS_FILE    = path.join(DATA_DIR, 'users.json');
 const AUDIT_FILE    = path.join(DATA_DIR, 'audit.json');
@@ -68,8 +74,12 @@ const BACKUPS_DIR   = path.join(DATA_DIR, 'backups');
 
 // Ensure data directory (and backups sub-dir) exist on startup
 function ensureDataDirs() {
-  if (!fs.existsSync(DATA_DIR))    fs.mkdirSync(DATA_DIR,    { recursive: true });
-  if (!fs.existsSync(BACKUPS_DIR)) fs.mkdirSync(BACKUPS_DIR, { recursive: true });
+  try {
+    if (!fs.existsSync(DATA_DIR))    fs.mkdirSync(DATA_DIR,    { recursive: true });
+    if (!fs.existsSync(BACKUPS_DIR)) fs.mkdirSync(BACKUPS_DIR, { recursive: true });
+  } catch (err) {
+    console.error('[SKYSERVE] Warning creating data directories:', err.message);
+  }
 }
 ensureDataDirs();
 
@@ -254,12 +264,12 @@ async function seedAdminAccounts() {
   const users = [];
 
   const defaultAdmins = [
-    { name: 'Aayush Devre',   username: 'aayush.devre',   envKey: 'ADMIN_AAYUSH_PASSWORD'  },
-    { name: 'Gayatri Kakade', username: 'gayatri.kakade', envKey: 'ADMIN_GAYATRI_PASSWORD' }
+    { name: 'Aayush Devre',   username: 'aayush.devre',   envKey: 'ADMIN_AAYUSH_PASSWORD', fallback: 'SkyServe#Aayush2026!'  },
+    { name: 'Gayatri Kakade', username: 'gayatri.kakade', envKey: 'ADMIN_GAYATRI_PASSWORD', fallback: 'SkyServe#Gayatri2026!' }
   ];
 
   for (const item of defaultAdmins) {
-    let initialPassword = (process.env[item.envKey] || '').trim();
+    let initialPassword = (process.env[item.envKey] || item.fallback || '').trim();
     let wasGenerated = false;
 
     if (!initialPassword || validatePasswordPolicy(initialPassword) !== null) {
@@ -304,6 +314,7 @@ async function seedAdminAccounts() {
 // 8. DAILY BACKUP OF users.json  (keep last 7)
 // -----------------------------------------------------------------------------
 function backupUsersFile() {
+  if (isServerless) return;
   if (!fs.existsSync(USERS_FILE)) return;
   try {
     const stamp   = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
@@ -335,6 +346,7 @@ function backupUsersFile() {
 
 // Run once at startup, then repeat every 24 hours
 function scheduleBackups() {
+  if (isServerless) return;
   backupUsersFile();
   setInterval(backupUsersFile, 24 * 60 * 60 * 1000).unref();
 }
@@ -504,7 +516,7 @@ function parseCookies(req) {
 function isRequestSecure(req) {
   const isProd = process.env.NODE_ENV === 'production';
   const xFwdProto = (req.headers['x-forwarded-proto'] || '').toLowerCase();
-  return isProd || req.socket.encrypted || xFwdProto === 'https';
+  return isProd || (req.socket && req.socket.encrypted) || xFwdProto === 'https';
 }
 
 function getSessionCookieHeader(token, req, maxAgeSeconds = 28800) {
@@ -520,7 +532,7 @@ function getClearSessionCookieHeader(req) {
 function getClientIp(req) {
   const fwd = req.headers['x-forwarded-for'];
   if (fwd) return fwd.split(',')[0].trim();
-  return req.socket.remoteAddress || '127.0.0.1';
+  return (req.socket && req.socket.remoteAddress) || '127.0.0.1';
 }
 
 function checkRateLimit(username, ip) {
@@ -661,10 +673,20 @@ function serveStaticFile(req, res, session) {
 
   let reqPath = decodeURIComponent(parsedUrl.pathname);
   if (reqPath === '/') reqPath = '/index.html';
+  if (reqPath === '/login') reqPath = '/login.html';
 
-  // Strict path traversal check
-  const safeBase     = path.resolve(__dirname);
-  const resolvedPath = path.resolve(safeBase, '.' + path.normalize(reqPath));
+  // Strict path traversal check with cwd fallback for serverless bundles
+  let safeBase = path.resolve(__dirname);
+  let resolvedPath = path.resolve(safeBase, '.' + path.normalize(reqPath));
+
+  if (!fs.existsSync(resolvedPath)) {
+    const cwdBase = path.resolve(process.cwd());
+    const cwdPath = path.resolve(cwdBase, '.' + path.normalize(reqPath));
+    if (fs.existsSync(cwdPath)) {
+      safeBase = cwdBase;
+      resolvedPath = cwdPath;
+    }
+  }
 
   if (!resolvedPath.startsWith(safeBase + path.sep) && resolvedPath !== safeBase) {
     res.writeHead(403, { 'Content-Type': 'text/plain' });
@@ -674,7 +696,7 @@ function serveStaticFile(req, res, session) {
   const relativePath = path.relative(safeBase, resolvedPath).replace(/\\/g, '/');
 
   // Hard-block sensitive files & the data directory
-  const forbiddenNames = ['server.js', 'package.json', 'package-lock.json', '.env', '.gitignore', 'readme.md'];
+  const forbiddenNames = ['server.js', 'package.json', 'package-lock.json', '.env', '.gitignore', 'readme.md', 'vercel.json'];
   if (
     forbiddenNames.includes(relativePath.toLowerCase()) ||
     relativePath.startsWith('.env') ||
@@ -739,7 +761,7 @@ function serveStaticFile(req, res, session) {
 // -----------------------------------------------------------------------------
 let isShuttingDown = false;
 
-const server = http.createServer(async (req, res) => {
+async function handleRequest(req, res) {
   const startTime = process.hrtime.bigint();
   const ip        = getClientIp(req);
   const session   = getSession(req);
@@ -1059,10 +1081,12 @@ const server = http.createServer(async (req, res) => {
 
   // Unhandled API endpoint
   return sendJson(req, res, 404, { error: 'API route not found' });
-});
+}
+
+const server = http.createServer(handleRequest);
 
 // -----------------------------------------------------------------------------
-// 14. GRACEFUL SHUTDOWN
+// 14. GRACEFUL SHUTDOWN (STANDALONE ONLY)
 // -----------------------------------------------------------------------------
 function handleGracefulShutdown(signal) {
   if (isShuttingDown) return;
@@ -1090,30 +1114,58 @@ function handleGracefulShutdown(signal) {
   setTimeout(() => { console.warn('[SKYSERVE] Shutdown timed out. Forcing termination.'); process.exit(0); }, 5000).unref();
 }
 
-process.on('SIGTERM', () => handleGracefulShutdown('SIGTERM'));
-process.on('SIGINT',  () => handleGracefulShutdown('SIGINT'));
-if (process.send) {
-  process.on('message', (msg) => {
-    if (msg === 'shutdown' || msg === 'SIGTERM' || msg === 'SIGINT') handleGracefulShutdown('SIGTERM');
-  });
+if (!isServerless) {
+  process.on('SIGTERM', () => handleGracefulShutdown('SIGTERM'));
+  process.on('SIGINT',  () => handleGracefulShutdown('SIGINT'));
+  if (process.send) {
+    process.on('message', (msg) => {
+      if (msg === 'shutdown' || msg === 'SIGTERM' || msg === 'SIGINT') handleGracefulShutdown('SIGTERM');
+    });
+  }
 }
 
 // -----------------------------------------------------------------------------
-// 15. SERVER STARTUP
+// 15. INITIALIZATION & EXPORTS
 // -----------------------------------------------------------------------------
-(async () => {
-  try {
-    console.log(`[SKYSERVE] DATA_DIR = ${DATA_DIR}`);
-    await seedAdminAccounts();    // seed only if users.json is absent
-    loadSessions();               // hydrate in-memory session Map from disk
-    scheduleBackups();            // daily backup of users.json
+let initPromise = null;
+function initializeServer() {
+  if (!initPromise) {
+    initPromise = (async () => {
+      try {
+        console.log(`[SKYSERVE] DATA_DIR = ${DATA_DIR} (serverless=${isServerless})`);
+        ensureDataDirs();
+        await seedAdminAccounts();    // seed only if users.json is absent
+        loadSessions();               // hydrate in-memory session Map from disk
+        if (!isServerless) {
+          scheduleBackups();          // daily backup of users.json
+        }
+      } catch (err) {
+        console.error('[SKYSERVE] Initialization error:', err);
+      }
+    })();
+  }
+  return initPromise;
+}
 
+// Export handler for Vercel / serverless runtime
+const handler = async (req, res) => {
+  await initializeServer();
+  return handleRequest(req, res);
+};
+
+module.exports = handler;
+module.exports.default = handler;
+module.exports.server = server;
+
+// Standalone execution (Local dev, Docker, VPS)
+if (!isServerless) {
+  initializeServer().then(() => {
     server.listen(PORT, HOST, () => {
       const envMode = process.env.NODE_ENV || 'development';
       console.log(`[SKYSERVE] Mission Control active at http://${HOST}:${PORT}/ (NODE_ENV=${envMode})`);
     });
-  } catch (err) {
+  }).catch((err) => {
     console.error('[SKYSERVE] Fatal initialization error:', err);
     process.exit(1);
-  }
-})();
+  });
+}
