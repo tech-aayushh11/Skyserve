@@ -3,11 +3,19 @@
   "rewrites": [
     {
       "source": "/(.*)",
-      "destination": "/api/index.js"
+      "destination": "/server.js"
     }
   ],
   "functions": {
-    "api/index.js": {
+    "server.js": {
+      "includeFiles": [
+        "*.html",
+        "css/**",
+        "js/**",
+        "assets/**"
+      ]
+    },
+    "api/**/*.js": {
       "includeFiles": [
         "*.html",
         "css/**",
