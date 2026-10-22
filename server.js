@@ -780,8 +780,18 @@ async function handleRequest(req, res) {
   });
 
   // Health check (unauthenticated, no-store)
-  if (method === 'GET' && pathname === '/healthz') {
-    return sendJson(req, res, 200, { status: 'ok' });
+  if (method === 'GET' && (pathname === '/healthz' || pathname === '/api/healthz')) {
+    let dirFiles = [];
+    let cwdFiles = [];
+    try { dirFiles = fs.readdirSync(__dirname); } catch (e) { dirFiles = [e.message]; }
+    try { cwdFiles = fs.readdirSync(process.cwd()); } catch (e) { cwdFiles = [e.message]; }
+    return sendJson(req, res, 200, {
+      status: 'ok',
+      dirname: __dirname,
+      cwd: process.cwd(),
+      dirFiles,
+      cwdFiles
+    });
   }
 
   // 503 during graceful shutdown
