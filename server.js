@@ -675,16 +675,23 @@ function serveStaticFile(req, res, session) {
   if (reqPath === '/') reqPath = '/index.html';
   if (reqPath === '/login') reqPath = '/login.html';
 
-  // Strict path traversal check with cwd fallback for serverless bundles
+  // Strict path traversal check with robust directory resolution
   let safeBase = path.resolve(__dirname);
   let resolvedPath = path.resolve(safeBase, '.' + path.normalize(reqPath));
 
-  if (!fs.existsSync(resolvedPath)) {
-    const cwdBase = path.resolve(process.cwd());
-    const cwdPath = path.resolve(cwdBase, '.' + path.normalize(reqPath));
-    if (fs.existsSync(cwdPath)) {
-      safeBase = cwdBase;
-      resolvedPath = cwdPath;
+  const candidateDirs = [
+    __dirname,
+    process.cwd(),
+    path.resolve(__dirname, '..'),
+    path.resolve(process.cwd(), '..')
+  ];
+
+  for (const dir of candidateDirs) {
+    const candidate = path.resolve(dir, '.' + path.normalize(reqPath));
+    if (fs.existsSync(candidate)) {
+      safeBase = path.resolve(dir);
+      resolvedPath = candidate;
+      break;
     }
   }
 
